@@ -55,6 +55,9 @@ url = "2"
 # Staging dirs + per-user cache/state dirs
 tempfile = "3"
 directories = "5"
+ureq = { version = "3.3.0", default-features = false, features = ["rustls"] }
+ffmpeg-sidecar = "2.5.2"
+fs2 = "0.4.3"
 
 [profile.release]
 strip = true

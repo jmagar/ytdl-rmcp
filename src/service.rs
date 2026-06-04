@@ -36,7 +36,7 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
     };
     let video_dest = video_dest.unwrap_or_else(|| audio_dest.clone());
 
-    let tools = bootstrap::resolve(cfg)?;
+    let tools = ensure_tools(cfg).await?;
 
     let archive_dir: Option<PathBuf> = if input.use_archive {
         let d = cfg
@@ -61,6 +61,11 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
         .tempdir_in(&staging_base)?;
     let staging_path = staging.path().to_path_buf();
 
+    // Audio codec: explicit arg, else the YTDLP_AUDIO_FORMAT env default.
+    let audio_format = input
+        .audio_format
+        .unwrap_or_else(|| crate::model::AudioFormat::parse_or_default(&cfg.audio_format));
+
     // Download every URL (mix/radio cleaned first).
     let mut results: Vec<ItemResult> = Vec::new();
     for raw in input.urls.clone().into_vec() {
@@ -70,7 +75,7 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
             &url,
             input.mode,
             &staging_path,
-            input.audio_format,
+            audio_format,
             &input.audio_quality,
             input.container,
             input.max_height,
@@ -130,8 +135,14 @@ async fn transfer_kind(dir: &Path, remote: &str, dest: &str, ssh_opts: &[String]
     crate::transfer::transfer(dir, remote, dest, ssh_opts).await
 }
 
+/// Resolve/install yt-dlp + ffmpeg off the async runtime (blocking network I/O).
+async fn ensure_tools(cfg: &Config) -> Result<bootstrap::Tools> {
+    let cfg = cfg.clone();
+    tokio::task::spawn_blocking(move || bootstrap::ensure(&cfg)).await?
+}
+
 pub async fn run_probe(cfg: &Config, input: ProbeInput) -> Result<String> {
-    let tools = bootstrap::resolve(cfg)?;
+    let tools = ensure_tools(cfg).await?;
     let mut results = Vec::new();
     for raw in input.urls.into_vec() {
         let url = strip_mix_params(&raw);

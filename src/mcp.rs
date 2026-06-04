@@ -16,6 +16,9 @@ use crate::service;
 #[derive(Clone)]
 pub struct YtdlServer {
     cfg: Arc<Config>,
+    // Referenced by the #[tool_handler] expansion; kept even though direct reads
+    // aren't visible to dead-code analysis.
+    #[allow(dead_code)]
     tool_router: ToolRouter<Self>,
 }
 

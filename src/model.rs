@@ -25,6 +25,17 @@ pub enum AudioFormat {
 }
 
 impl AudioFormat {
+    /// Parse from a config string (YTDLP_AUDIO_FORMAT), defaulting to mp3.
+    pub fn parse_or_default(s: &str) -> Self {
+        match s.trim().to_ascii_lowercase().as_str() {
+            "best" => AudioFormat::Best,
+            "m4a" => AudioFormat::M4a,
+            "opus" => AudioFormat::Opus,
+            "flac" => AudioFormat::Flac,
+            "wav" => AudioFormat::Wav,
+            _ => AudioFormat::Mp3,
+        }
+    }
     pub fn as_str(self) -> &'static str {
         match self {
             AudioFormat::Best => "best",
@@ -87,9 +98,6 @@ impl Urls {
     }
 }
 
-fn default_audio_format() -> AudioFormat {
-    AudioFormat::Mp3
-}
 fn default_audio_quality() -> String {
     "0".into()
 }
@@ -102,9 +110,9 @@ pub struct DownloadInput {
     /// 'audio' (default), 'video', or 'both'.
     #[serde(default)]
     pub mode: DownloadMode,
-    /// Audio codec when mode includes audio.
-    #[serde(default = "default_audio_format")]
-    pub audio_format: AudioFormat,
+    /// Audio codec when mode includes audio. Falls back to YTDLP_AUDIO_FORMAT.
+    #[serde(default)]
+    pub audio_format: Option<AudioFormat>,
     /// yt-dlp audio quality for lossy codecs: '0' (best VBR) to '9', or a bitrate like '192K'.
     #[serde(default = "default_audio_quality")]
     pub audio_quality: String,
