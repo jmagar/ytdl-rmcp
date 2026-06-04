@@ -1,6 +1,5 @@
 {
   "name": "ytdl-mcp",
-  "displayName": "yt-dlp Downloader",
   "version": "0.3.0",
   "description": "Download audio/video from any yt-dlp-supported site, tag it, and rsync it to an SSH remote.",
   "author": {
