@@ -1,0 +1,75 @@
+{
+  "name": "ytdl-mcp",
+  "displayName": "yt-dlp Downloader",
+  "version": "0.3.0",
+  "description": "Download audio/video from any yt-dlp-supported site, tag it, and rsync it to an SSH remote.",
+  "author": {
+    "name": "Jacob Magar"
+  },
+  "license": "MIT",
+  "keywords": ["yt-dlp", "youtube", "download", "media", "mcp", "rsync"],
+  "userConfig": {
+    "remote": {
+      "type": "string",
+      "title": "SSH remote",
+      "description": "SSH alias (~/.ssh/config) or user@host to rsync downloads to. Passwordless key auth required.",
+      "required": true
+    },
+    "audio_dest_path": {
+      "type": "string",
+      "title": "Audio destination",
+      "description": "Absolute remote directory for audio downloads, e.g. /mnt/user/data/media/music/yt-dlp",
+      "required": true
+    },
+    "video_dest_path": {
+      "type": "string",
+      "title": "Video destination",
+      "description": "Absolute remote directory for video downloads, e.g. /mnt/user/data/media/movies/yt-dlp. Falls back to the audio destination if blank.",
+      "required": false
+    },
+    "audio_format": {
+      "type": "string",
+      "title": "Default audio codec",
+      "description": "Default codec when downloading audio: mp3, m4a, opus, flac, wav, or best.",
+      "default": "mp3"
+    },
+    "ssh_opts": {
+      "type": "string",
+      "title": "Extra SSH options",
+      "description": "Additional ssh options, space-separated (appended after -o BatchMode=yes). Optional.",
+      "required": false
+    },
+    "staging_dir": {
+      "type": "directory",
+      "title": "Local staging dir",
+      "description": "Local directory to stage downloads before transfer. Defaults to system temp.",
+      "required": false
+    },
+    "archive_dir": {
+      "type": "directory",
+      "title": "Download archive dir",
+      "description": "Where the use_archive download history lives. Defaults to ~/.local/state/youtube_dl_mcp.",
+      "required": false
+    },
+    "auto_update": {
+      "type": "boolean",
+      "title": "Auto-update yt-dlp",
+      "description": "Update yt-dlp at server startup when stale. Recommended on — each session relaunch self-heals against extractor breakage.",
+      "default": true
+    },
+    "max_age_days": {
+      "type": "number",
+      "title": "Staleness threshold (days)",
+      "description": "Update yt-dlp when the installed version is older than this many days.",
+      "default": 14,
+      "min": 1,
+      "max": 365
+    },
+    "update_pre": {
+      "type": "boolean",
+      "title": "Track nightly channel",
+      "description": "Update from yt-dlp's nightly pre-release channel instead of stable.",
+      "default": false
+    }
+  }
+}
