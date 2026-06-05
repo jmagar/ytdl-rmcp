@@ -92,13 +92,24 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
             bail!("Nothing was downloaded: {}", errs.join("; "));
         }
         // Archive hit / genuinely empty — succeed with a no-op summary.
-        let payload = download_payload(&results, &remote, &audio_dest, true, None, None);
+        let payload = download_payload(&results, &remote, &[], true, None, None);
         return Ok(render(&payload, input.response_format, render_download_markdown));
+    }
+
+    // The destination each kind actually produced files for — drives both the
+    // transfer loop and the reported destination(s).
+    let has_kind = |k: &str| results.iter().flat_map(|r| &r.files).any(|f| f.kind == k);
+    let mut dests: Vec<(&str, &str)> = Vec::new();
+    if has_kind("audio") {
+        dests.push(("audio", &audio_dest));
+    }
+    if has_kind("video") {
+        dests.push(("video", &video_dest));
     }
 
     // Transfer each kind to its own destination.
     let mut transfer_error: Option<String> = None;
-    for (kind, dest) in [("audio", &audio_dest), ("video", &video_dest)] {
+    for (kind, dest) in &dests {
         let kind_dir = staging_path.join(kind);
         if !kind_dir.is_dir() {
             continue;
@@ -122,7 +133,7 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
     let payload = download_payload(
         &results,
         &remote,
-        &audio_dest,
+        &dests,
         transferred,
         transfer_error.clone(),
         staging_kept.as_deref(),
@@ -174,7 +185,9 @@ fn render(
 fn download_payload(
     results: &[ItemResult],
     remote: &str,
-    dest_path: &str,
+    // (kind, dest_path) pairs that actually received files — so a video-only
+    // download reports the video destination, and `both` reports both.
+    dests: &[(&str, &str)],
     transferred: bool,
     transfer_error: Option<String>,
     staging_kept: Option<&Path>,
@@ -200,12 +213,27 @@ fn download_payload(
         .collect();
     let total_files: usize = results.iter().map(|r| r.files.len()).sum();
     let total_bytes: u64 = results.iter().flat_map(|r| &r.files).map(|f| f.size).sum();
+    // Primary dest_path = first kind's path (audio in the common case); the full
+    // per-kind breakdown is in `destinations`, and the human string lists all.
+    let primary = dests.first().map(|(_, d)| *d).unwrap_or("");
+    let destination = if dests.is_empty() {
+        format!("{remote}:{primary}")
+    } else {
+        dests
+            .iter()
+            .map(|(_, d)| format!("{remote}:{d}"))
+            .collect::<Vec<_>>()
+            .join(", ")
+    };
     json!({
         "transferred": transferred,
         "transfer_error": transfer_error,
         "remote": remote,
-        "dest_path": dest_path,
-        "destination": format!("{remote}:{dest_path}"),
+        "dest_path": primary,
+        "destination": destination,
+        "destinations": dests.iter().map(|(kind, d)| json!({
+            "kind": kind, "dest_path": d, "destination": format!("{remote}:{d}"),
+        })).collect::<Vec<_>>(),
         "staging_kept_at": staging_kept.map(|p| p.display().to_string()),
         "total_files": total_files,
         "total_bytes": total_bytes,

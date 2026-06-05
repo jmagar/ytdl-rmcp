@@ -157,7 +157,7 @@ async fn run_pass(
             result.duration = duration.parse().ok();
         }
         let path = PathBuf::from(filepath);
-        if let Ok(md) = std::fs::metadata(&path) {
+        if let Ok(md) = tokio::fs::metadata(&path).await {
             result.files.push(MediaFile {
                 path,
                 kind,

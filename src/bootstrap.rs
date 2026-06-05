@@ -94,7 +94,12 @@ fn with_bin_lock<T>(f: impl FnOnce(&Path) -> Result<T>) -> Result<T> {
         .write(true)
         .truncate(false)
         .open(bin.join(".lock"))?;
-    lock.lock_exclusive().ok();
+    // Best-effort: a filesystem without advisory locks (some network mounts)
+    // shouldn't make tool resolution fail outright — downloads are still
+    // individually atomic — but surface the degraded state instead of hiding it.
+    if let Err(e) = lock.lock_exclusive() {
+        tracing::warn!(error = %e, "could not acquire bootstrap lock; proceeding unsynchronized");
+    }
 
     let result = f(&bin);
 
