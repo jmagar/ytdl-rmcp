@@ -29,6 +29,10 @@ pub struct Config {
     /// Explicit yt-dlp / ffmpeg binary overrides (else resolved by bootstrap).
     pub ytdlp_path: Option<String>,
     pub ffmpeg_path: Option<String>,
+    /// Passed to yt-dlp as `--extractor-args` (e.g.
+    /// `youtube:player_client=android`) for sites/videos the default clients
+    /// can't reach.
+    pub extractor_args: Option<String>,
 }
 
 impl Config {
@@ -48,6 +52,7 @@ impl Config {
             update_pre: as_bool("YTDLP_UPDATE_PRE", false),
             ytdlp_path: non_empty("YTDLP_PATH"),
             ffmpeg_path: non_empty("FFMPEG_PATH"),
+            extractor_args: non_empty("YTDLP_EXTRACTOR_ARGS"),
         }
     }
 

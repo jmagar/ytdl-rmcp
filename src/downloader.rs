@@ -70,6 +70,10 @@ fn common_args(staging: &Path, kind: &str, tools: &Tools, archive: Option<&Path>
         a.push("--ffmpeg-location".into());
         a.push(dir.display().to_string());
     }
+    if let Some(extra) = &tools.extractor_args {
+        a.push("--extractor-args".into());
+        a.push(extra.clone());
+    }
     if let Some(arch) = archive {
         a.push("--download-archive".into());
         a.push(arch.display().to_string());
@@ -225,17 +229,17 @@ pub struct ProbeResult {
 
 /// Resolve metadata for a URL without downloading (`yt-dlp -J --skip-download`).
 /// Takes just the yt-dlp path — probe never needs ffmpeg.
-pub async fn probe(ytdlp: &Path, url: &str) -> ProbeResult {
+pub async fn probe(ytdlp: &Path, url: &str, extractor_args: Option<&str>) -> ProbeResult {
     let mut r = ProbeResult {
         url: url.to_string(),
         ..Default::default()
     };
-    let output = match Command::new(ytdlp)
-        .args(["-J", "--skip-download", "--no-warnings", "--quiet"])
-        .arg(url)
-        .output()
-        .await
-    {
+    let mut cmd = Command::new(ytdlp);
+    cmd.args(["-J", "--skip-download", "--no-warnings", "--quiet"]);
+    if let Some(extra) = extractor_args {
+        cmd.arg("--extractor-args").arg(extra);
+    }
+    let output = match cmd.arg(url).output().await {
         Ok(o) => o,
         Err(e) => {
             r.error = Some(e.to_string());

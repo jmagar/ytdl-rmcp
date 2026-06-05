@@ -163,7 +163,7 @@ pub async fn run_probe(cfg: &Config, input: ProbeInput) -> Result<String> {
     let mut results = Vec::new();
     for raw in input.urls.into_vec() {
         let url = strip_mix_params(&raw);
-        results.push(downloader::probe(&ytdlp, &url).await);
+        results.push(downloader::probe(&ytdlp, &url, cfg.extractor_args.as_deref()).await);
     }
     let payload = probe_payload(&results);
     Ok(render(&payload, input.response_format, render_probe_markdown))

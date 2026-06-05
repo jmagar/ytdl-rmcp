@@ -17,13 +17,16 @@ use fs2::FileExt;
 
 use crate::config::Config;
 
-/// Resolved paths to the external tools used by a download.
+/// Resolved paths to the external tools used by a download, plus pass-through
+/// yt-dlp options that apply to every invocation.
 #[derive(Debug, Clone)]
 pub struct Tools {
     pub ytdlp: PathBuf,
     /// Directory containing ffmpeg (passed to yt-dlp via `--ffmpeg-location`),
     /// or None to let yt-dlp find ffmpeg itself.
     pub ffmpeg_dir: Option<PathBuf>,
+    /// Value for yt-dlp's `--extractor-args`, if configured.
+    pub extractor_args: Option<String>,
 }
 
 /// This app's per-user directories (cache/state/…). Single source of the
@@ -79,7 +82,11 @@ pub fn ensure(cfg: &Config) -> Result<Tools> {
         let ytdlp = ytdlp::ensure(bin, cfg)?;
         let ffmpeg = ffmpeg::ensure(bin, cfg)?;
         let ffmpeg_dir = ffmpeg.parent().map(Path::to_path_buf);
-        Ok(Tools { ytdlp, ffmpeg_dir })
+        Ok(Tools {
+            ytdlp,
+            ffmpeg_dir,
+            extractor_args: cfg.extractor_args.clone(),
+        })
     })
 }
 
