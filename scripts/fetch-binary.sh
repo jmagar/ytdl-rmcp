@@ -28,11 +28,36 @@ case "$os/$arch" in
 esac
 
 url="https://github.com/$REPO/releases/latest/download/$asset"
+
+fetch() { # fetch <url> <out>; prints to stdout via -O- when out is "-"
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$1" -o "$2"
+  else
+    wget -qO "$2" "$1"
+  fi
+}
+
+# download to a temp file, verify, then atomically move into place
+tmp="$BIN.part"
 log "downloading $asset"
-if command -v curl >/dev/null 2>&1; then
-  curl -fsSL "$url" -o "$BIN"
+fetch "$url" "$tmp"
+
+# Verify against the release's published checksum when present (releases built
+# by .github/workflows/release.yml publish <asset>.sha256). Best-effort: if a
+# release has no checksum, warn and proceed rather than hard-fail.
+expected=$(fetch "$url.sha256" - 2>/dev/null | awk '{print $1}') || true
+if [ -n "$expected" ]; then
+  actual=$(sha256sum "$tmp" | awk '{print $1}')
+  if [ "$expected" != "$actual" ]; then
+    rm -f "$tmp"
+    log "checksum mismatch for $asset (expected $expected, got $actual) — refusing to install"
+    exit 1
+  fi
+  log "checksum verified"
 else
-  wget -qO "$BIN" "$url"
+  log "no published checksum for $asset; skipping verification"
 fi
-chmod 0755 "$BIN"
+
+chmod 0755 "$tmp"
+mv -f "$tmp" "$BIN"
 log "ready: $BIN"

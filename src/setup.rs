@@ -106,14 +106,25 @@ pub async fn run() -> Result<()> {
     }
 
     eprintln!();
+    let mut failures = 0;
     for &idx in &chosen {
         let agent = available[idx];
         match register(agent, &self_path, &envs) {
             Ok(()) => eprintln!("  ✓ registered with {}", agent.label),
-            Err(e) => eprintln!("  ✗ {} failed: {e}", agent.label),
+            Err(e) => {
+                eprintln!("  ✗ {} failed: {e}", agent.label);
+                failures += 1;
+            }
         }
     }
 
+    if failures > 0 {
+        // Non-zero exit so automation/users don't mistake a failed install for success.
+        anyhow::bail!(
+            "{failures} of {} agent registration(s) failed",
+            chosen.len()
+        );
+    }
     eprintln!("\nDone. Restart each agent to pick up the new MCP server.");
     Ok(())
 }

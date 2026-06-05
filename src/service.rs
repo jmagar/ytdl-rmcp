@@ -227,15 +227,18 @@ fn download_payload(
     let total_bytes: u64 = results.iter().flat_map(|r| &r.files).map(|f| f.size).sum();
     // Primary dest_path = first kind's path (audio in the common case); the full
     // per-kind breakdown is in `destinations`, and the human string lists all.
+    // When nothing was transferred (archive hit) there's no destination at all.
     let primary = dests.first().map(|(_, d)| *d).unwrap_or("");
-    let destination = if dests.is_empty() {
-        format!("{remote}:{primary}")
+    let destination: Option<String> = if dests.is_empty() {
+        None
     } else {
-        dests
-            .iter()
-            .map(|(_, d)| format!("{remote}:{d}"))
-            .collect::<Vec<_>>()
-            .join(", ")
+        Some(
+            dests
+                .iter()
+                .map(|(_, d)| format!("{remote}:{d}"))
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
     };
     json!({
         "transferred": transferred,
@@ -273,10 +276,14 @@ fn probe_payload(results: &[ProbeResult]) -> serde_json::Value {
 fn render_download_markdown(p: &serde_json::Value) -> String {
     let mut lines = Vec::new();
     let transferred = p["transferred"].as_bool().unwrap_or(false);
-    if transferred {
+    let total_files = p["total_files"].as_u64().unwrap_or(0);
+    if transferred && total_files == 0 {
+        // Archive hit / nothing new — no destination to report.
+        lines.push("Nothing new to download (already archived).".to_string());
+    } else if transferred {
         lines.push(format!(
             "Transferred {} file(s) ({}) to `{}`.",
-            p["total_files"],
+            total_files,
             p["total_size"].as_str().unwrap_or(""),
             p["destination"].as_str().unwrap_or("")
         ));

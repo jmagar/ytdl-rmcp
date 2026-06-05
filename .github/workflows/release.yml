@@ -53,15 +53,18 @@ jobs:
         if: matrix.target == 'x86_64-pc-windows-msvc'
         run: cargo xwin build --release --target ${{ matrix.target }}
 
-      - name: Stage artifact
+      - name: Stage artifact + checksum
         run: |
           cp "target/${{ matrix.target }}/release/ytdl-mcp${{ matrix.ext }}" "${{ matrix.artifact }}"
+          sha256sum "${{ matrix.artifact }}" > "${{ matrix.artifact }}.sha256"
 
       - name: Upload to release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ matrix.artifact }}
+          files: |
+            ${{ matrix.artifact }}
+            ${{ matrix.artifact }}.sha256
 
       - name: Upload as workflow artifact
         uses: actions/upload-artifact@v4
