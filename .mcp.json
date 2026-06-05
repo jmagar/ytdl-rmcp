@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "youtube-dl": {
+    "ytdl-mcp": {
       "command": "${CLAUDE_PLUGIN_ROOT}/scripts/run-server.sh",
       "env": {
         "YTDLP_REMOTE": "${user_config.remote}",
@@ -12,7 +12,8 @@
         "YTDLP_ARCHIVE_DIR": "${user_config.archive_dir}",
         "YTDLP_AUTO_UPDATE": "${user_config.auto_update}",
         "YTDLP_MAX_AGE_DAYS": "${user_config.max_age_days}",
-        "YTDLP_UPDATE_PRE": "${user_config.update_pre}"
+        "YTDLP_UPDATE_PRE": "${user_config.update_pre}",
+        "YTDLP_EXTRACTOR_ARGS": "${user_config.extractor_args}"
       }
     }
   }

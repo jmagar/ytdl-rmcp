@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/setup-venv.sh"
+            "command": "\"${CLAUDE_PLUGIN_ROOT}\"/scripts/fetch-binary.sh"
           }
         ]
       }

@@ -1,0 +1,79 @@
+name: release
+
+# Build the cross-platform binaries and attach them to a GitHub Release on tag.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+            artifact: ytdl-mcp-linux-x86_64
+            ext: ""
+          - target: x86_64-pc-windows-msvc
+            os: ubuntu-latest
+            artifact: ytdl-mcp-windows-x86_64.exe
+            ext: ".exe"
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      # ring assembles x64 Windows asm with NASM; cargo-xwin needs the LLVM
+      # toolchain. Both are no-ops for the native Linux target.
+      - name: Install cross toolchain
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm llvm clang lld
+          cargo install cargo-xwin --locked
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Build (linux)
+        if: matrix.target == 'x86_64-unknown-linux-gnu'
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (windows cross)
+        if: matrix.target == 'x86_64-pc-windows-msvc'
+        run: cargo xwin build --release --target ${{ matrix.target }}
+
+      - name: Stage artifact
+        run: |
+          cp "target/${{ matrix.target }}/release/ytdl-mcp${{ matrix.ext }}" "${{ matrix.artifact }}"
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ matrix.artifact }}
+
+      - name: Upload as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test --all
+      - run: cargo clippy --all-targets -- -D warnings

@@ -1,25 +1,18 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-.eggs/
-dist/
-build/
+# Rust build output
+/target/
+**/*.rs.bk
 
-# Virtual environments
-.venv/
-venv/
-env/
+# Cargo.lock IS committed (this is a binary, not a library)
 
-# Tooling
-.ruff_cache/
-.mypy_cache/
-.pytest_cache/
+# Local cross-compile / xwin caches
+.xwin-cache/
 
-# yt-dlp state
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/
+
+# Local scratch
 *.part
 *.ytdl
-archive-*.txt
-
-# OS
-.DS_Store

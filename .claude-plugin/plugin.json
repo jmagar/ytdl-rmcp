@@ -1,12 +1,19 @@
 {
   "name": "ytdl-mcp",
-  "version": "0.3.0",
-  "description": "Download audio/video from any yt-dlp-supported site, tag it, and rsync it to an SSH remote.",
+  "version": "0.4.0",
+  "description": "Download audio/video with yt-dlp (Rust binary), embed metadata + cover art, organize by artist, and rsync to an SSH remote.",
   "author": {
     "name": "Jacob Magar"
   },
   "license": "MIT",
-  "keywords": ["yt-dlp", "youtube", "download", "media", "mcp", "rsync"],
+  "keywords": [
+    "yt-dlp",
+    "youtube",
+    "download",
+    "media",
+    "mcp",
+    "rsync"
+  ],
   "userConfig": {
     "remote": {
       "type": "string",
@@ -53,7 +60,7 @@
     "auto_update": {
       "type": "boolean",
       "title": "Auto-update yt-dlp",
-      "description": "Update yt-dlp at server startup when stale. Recommended on — each session relaunch self-heals against extractor breakage.",
+      "description": "Update yt-dlp at server startup when stale. Recommended on \u2014 each session relaunch self-heals against extractor breakage.",
       "default": true
     },
     "max_age_days": {
@@ -69,6 +76,12 @@
       "title": "Track nightly channel",
       "description": "Update from yt-dlp's nightly pre-release channel instead of stable.",
       "default": false
+    },
+    "extractor_args": {
+      "type": "string",
+      "title": "yt-dlp extractor args",
+      "description": "Passed to yt-dlp's --extractor-args, e.g. 'youtube:player_client=android' for videos the default clients can't reach. Optional.",
+      "required": false
     }
   }
 }

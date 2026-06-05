@@ -1,0 +1,64 @@
+[package]
+name = "ytdl-mcp"
+version = "0.4.0"
+edition = "2021"
+description = "Cross-platform MCP server that downloads media with yt-dlp, tags it, and rsyncs it to an SSH remote."
+license = "MIT"
+repository = "https://github.com/jmagar/ytdl-mcp"
+default-run = "ytdl-mcp"
+
+[[bin]]
+name = "ytdl-mcp"
+path = "src/main.rs"
+
+[dependencies]
+# MCP server (stdio transport)
+rmcp = { version = "1.7", default-features = false, features = [
+  "server",
+  "macros",
+  "transport-io",
+  "schemars",
+] }
+
+# Async runtime — trimmed feature set (no `full`)
+tokio = { version = "1", features = [
+  "rt-multi-thread",
+  "macros",
+  "io-std",
+  "io-util",
+  "process",
+  "fs",
+  "time",
+  "sync",
+] }
+
+# Serialization / schemas
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+schemars = "1"
+
+# CLI dispatch (serve | setup)
+clap = { version = "4", features = ["derive"] }
+
+# Errors + logging (logging MUST go to stderr — stdout is the JSON-RPC channel)
+anyhow = "1"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Locate external executables (yt-dlp, ffmpeg, rsync, scp, ssh)
+which = "7"
+
+# URL parsing for mix/radio cleaning
+url = "2"
+
+# Staging dirs + per-user cache/state dirs
+tempfile = "3"
+directories = "5"
+ureq = { version = "3.3.0", default-features = false, features = ["rustls"] }
+ffmpeg-sidecar = "2.5.2"
+fs2 = "0.4.3"
+dialoguer = { version = "0.12.0", default-features = false }
+
+[profile.release]
+strip = true
+lto = "thin"

@@ -1,0 +1,52 @@
+name: ci
+
+on:
+  push:
+    branches: [main, rust-port]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust (stable + rustfmt + clippy)
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: Test
+        run: cargo test --all
+
+  cross-build:
+    # Smoke-build the Windows target so cross-compile breakage is caught in CI,
+    # not at release time.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: windows-msvc
+      - name: Install cross toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y nasm llvm clang lld
+          cargo install cargo-xwin --locked
+      - name: Cross-build (windows-msvc)
+        run: cargo xwin build --release --target x86_64-pc-windows-msvc
