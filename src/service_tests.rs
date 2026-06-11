@@ -1,8 +1,12 @@
 use std::path::PathBuf;
 
+use serde_json::json;
+
 use super::*;
 use crate::downloader::{ItemResult, MediaFile};
-use crate::model::{AudioFormat, DownloadMode, Urls, VideoContainer};
+use crate::model::{
+    AudioFormat, DownloadMode, SearchPayload, SearchResultItem, Urls, VideoContainer,
+};
 
 fn media_file(kind: &'static str, name: &str) -> MediaFile {
     MediaFile {
@@ -97,6 +101,45 @@ fn markdown_reports_partial_item_without_hiding_files() {
     assert!(rendered.contains("- Half Good - partially completed: audio pass failed"));
     assert!(rendered.contains("[video] Half Good [abc].mp4 (2.0 KiB)"));
     assert!(!rendered.contains("https://example.test/watch - failed"));
+}
+
+#[test]
+fn render_search_markdown_lists_results_with_urls() {
+    let payload = SearchPayload {
+        query: "slow pulp".into(),
+        limit: 2,
+        results: vec![SearchResultItem {
+            title: "Slow Pulp - Falling Apart Live".into(),
+            url: "https://www.youtube.com/watch?v=abc123".into(),
+            video_id: Some("abc123".into()),
+            uploader: Some("Slow Pulp".into()),
+            duration: Some(215.0),
+            thumbnail: None,
+            view_count: Some(42000),
+        }],
+    };
+
+    let rendered = super::render_search_for_test(&payload, ResponseFormat::Markdown);
+
+    assert!(rendered.contains("YouTube search: slow pulp"));
+    assert!(rendered.contains("Slow Pulp - Falling Apart Live"));
+    assert!(rendered.contains("https://www.youtube.com/watch?v=abc123"));
+    assert!(rendered.contains("3:35"));
+}
+
+#[test]
+fn render_search_json_has_results_array() {
+    let payload = SearchPayload {
+        query: "slow pulp".into(),
+        limit: 1,
+        results: Vec::new(),
+    };
+
+    let rendered = super::render_search_for_test(&payload, ResponseFormat::Json);
+    let value: serde_json::Value = serde_json::from_str(&rendered).unwrap();
+
+    assert_eq!(value["query"], "slow pulp");
+    assert_eq!(value["results"].as_array().unwrap().len(), 0);
 }
 
 #[tokio::test]
