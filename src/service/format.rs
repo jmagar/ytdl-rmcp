@@ -3,7 +3,10 @@ use std::path::Path;
 use serde_json::json;
 
 use crate::downloader::{ItemResult, ProbeResult};
-use crate::model::{ResponseFormat, SearchPayload};
+use crate::model::ResponseFormat;
+
+#[cfg(test)]
+use crate::model::SearchPayload;
 
 pub(crate) fn render(
     payload: &serde_json::Value,

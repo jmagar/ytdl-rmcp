@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::bootstrap;
 use crate::config::Config;
 use crate::downloader::{self, FetchOptions, ItemResult};
-use crate::model::{DownloadInput, ProbeInput, ResponseFormat, SearchInput, SearchPayload};
+use crate::model::{DownloadInput, ProbeInput, SearchInput, SearchPayload};
 use crate::urls::strip_mix_params;
 
 use format::{

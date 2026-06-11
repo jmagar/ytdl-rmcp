@@ -8,7 +8,7 @@ use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, S
 use rmcp::{tool, tool_handler, tool_router, ErrorData, ServerHandler};
 
 use crate::config::Config;
-use crate::model::{DownloadInput, ProbeInput};
+use crate::model::{DownloadInput, ProbeInput, SearchInput};
 use crate::service;
 
 #[derive(Clone)]
@@ -61,6 +61,24 @@ impl YtdlServer {
         Parameters(input): Parameters<ProbeInput>,
     ) -> Result<CallToolResult, ErrorData> {
         match service::run_probe(&self.cfg, input).await {
+            Ok(text) => Ok(CallToolResult::success(vec![Content::text(text)])),
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(format!(
+                "Error: {e}"
+            ))])),
+        }
+    }
+
+    /// Search YouTube through yt-dlp without downloading. Returns result URLs that
+    /// can be passed to `youtube_probe` or `youtube_download`.
+    #[tool(
+        name = "youtube_search",
+        description = "Search YouTube with yt-dlp and return matching video URLs without downloading."
+    )]
+    async fn youtube_search(
+        &self,
+        Parameters(input): Parameters<SearchInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        match service::run_search(&self.cfg, input).await {
             Ok(text) => Ok(CallToolResult::success(vec![Content::text(text)])),
             Err(e) => Ok(CallToolResult::error(vec![Content::text(format!(
                 "Error: {e}"

@@ -5,7 +5,8 @@ use serde_json::json;
 use super::*;
 use crate::downloader::{ItemResult, MediaFile};
 use crate::model::{
-    AudioFormat, DownloadMode, SearchPayload, SearchResultItem, Urls, VideoContainer,
+    AudioFormat, DownloadMode, ResponseFormat, SearchPayload, SearchResultItem, Urls,
+    VideoContainer,
 };
 
 fn media_file(kind: &'static str, name: &str) -> MediaFile {
