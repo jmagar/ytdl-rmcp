@@ -4,11 +4,15 @@ use std::sync::Arc;
 
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
-use rmcp::model::{CallToolResult, Content, Implementation, ServerCapabilities, ServerInfo};
-use rmcp::{tool, tool_handler, tool_router, ErrorData, ServerHandler};
+use rmcp::model::{
+    CallToolResult, Content, Implementation, ListResourcesResult, PaginatedRequestParams,
+    ReadResourceRequestParams, ReadResourceResult, ServerCapabilities, ServerInfo,
+};
+use rmcp::{tool, tool_handler, tool_router, ErrorData, RoleServer, ServerHandler};
 
 use crate::config::Config;
 use crate::model::{DownloadInput, ProbeInput, SearchInput};
+use crate::search_app;
 use crate::service;
 
 #[derive(Clone)]
@@ -85,12 +89,64 @@ impl YtdlServer {
             ))])),
         }
     }
+
+    /// Open the interactive YouTube search MCP App. UI-capable hosts render the
+    /// embedded Aurora search panel; other hosts receive text fallback results.
+    #[tool(
+        name = "youtube_search_ui",
+        description = "Open an interactive YouTube search UI for selecting videos to probe or download."
+    )]
+    async fn youtube_search_ui(
+        &self,
+        Parameters(input): Parameters<SearchInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        match service::run_search_payload(&self.cfg, &input).await {
+            Ok(payload) => {
+                let text = serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".into());
+                let mut result = CallToolResult::success(vec![Content::text(text)]);
+                result.structured_content =
+                    Some(serde_json::to_value(&payload).unwrap_or_default());
+                result.meta = Some(search_app::tool_meta());
+                Ok(result)
+            }
+            Err(e) => Ok(CallToolResult::error(vec![Content::text(format!(
+                "Error: {e}"
+            ))])),
+        }
+    }
 }
 
 #[tool_handler]
 impl ServerHandler for YtdlServer {
     fn get_info(&self) -> ServerInfo {
-        ServerInfo::new(ServerCapabilities::builder().enable_tools().build())
-            .with_server_info(Implementation::new("ytdl-mcp", env!("CARGO_PKG_VERSION")))
+        ServerInfo::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .build(),
+        )
+        .with_server_info(Implementation::new("ytdl-mcp", env!("CARGO_PKG_VERSION")))
+    }
+
+    fn list_resources(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: rmcp::service::RequestContext<RoleServer>,
+    ) -> impl std::future::Future<Output = Result<ListResourcesResult, ErrorData>> + Send + '_
+    {
+        std::future::ready(Ok(search_app::list_app_resources()))
+    }
+
+    fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: rmcp::service::RequestContext<RoleServer>,
+    ) -> impl std::future::Future<Output = Result<ReadResourceResult, ErrorData>> + Send + '_
+    {
+        std::future::ready(
+            search_app::read_app_resource(&request.uri).ok_or_else(|| {
+                ErrorData::invalid_params(format!("Unknown resource URI: {}", request.uri), None)
+            }),
+        )
     }
 }
