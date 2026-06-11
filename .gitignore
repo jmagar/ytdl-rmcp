@@ -14,5 +14,6 @@
 .vscode/
 
 # Local scratch
+.worktrees/
 *.part
 *.ytdl

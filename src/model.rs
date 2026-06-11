@@ -155,6 +155,47 @@ pub struct ProbeInput {
     pub response_format: ResponseFormat,
 }
 
+fn default_search_limit() -> u32 {
+    10
+}
+
+/// Input for `youtube_search` and `youtube_search_ui`.
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+pub struct SearchInput {
+    /// YouTube search terms. This is passed to yt-dlp as `ytsearchN:<query>`.
+    pub query: String,
+    /// Number of YouTube results to return. Clamped to 1..=25.
+    #[serde(default = "default_search_limit")]
+    pub limit: u32,
+    /// 'markdown' (human-readable) or 'json' (machine-readable).
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+impl SearchInput {
+    pub fn effective_limit(&self) -> u32 {
+        self.limit.clamp(1, 25)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct SearchResultItem {
+    pub title: String,
+    pub url: String,
+    pub video_id: Option<String>,
+    pub uploader: Option<String>,
+    pub duration: Option<f64>,
+    pub thumbnail: Option<String>,
+    pub view_count: Option<u64>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
+pub struct SearchPayload {
+    pub query: String,
+    pub limit: u32,
+    pub results: Vec<SearchResultItem>,
+}
+
 #[cfg(test)]
 #[path = "model_tests.rs"]
 mod tests;

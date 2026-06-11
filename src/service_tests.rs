@@ -1,8 +1,13 @@
-use std::path::PathBuf;
+use std::{ffi::OsString, path::PathBuf};
+
+use serde_json::json;
 
 use super::*;
 use crate::downloader::{ItemResult, MediaFile};
-use crate::model::{AudioFormat, DownloadMode, Urls, VideoContainer};
+use crate::model::{
+    AudioFormat, DownloadMode, ResponseFormat, SearchInput, SearchPayload, SearchResultItem, Urls,
+    VideoContainer,
+};
 
 fn media_file(kind: &'static str, name: &str) -> MediaFile {
     MediaFile {
@@ -99,6 +104,99 @@ fn markdown_reports_partial_item_without_hiding_files() {
     assert!(!rendered.contains("https://example.test/watch - failed"));
 }
 
+#[test]
+fn render_search_markdown_lists_results_with_urls() {
+    let payload = SearchPayload {
+        query: "slow pulp".into(),
+        limit: 2,
+        results: vec![SearchResultItem {
+            title: "Slow Pulp - Falling Apart Live".into(),
+            url: "https://www.youtube.com/watch?v=abc123".into(),
+            video_id: Some("abc123".into()),
+            uploader: Some("Slow Pulp".into()),
+            duration: Some(215.0),
+            thumbnail: None,
+            view_count: Some(42000),
+        }],
+    };
+
+    let rendered = super::render_search_for_test(&payload, ResponseFormat::Markdown);
+
+    assert!(rendered.contains("YouTube search: slow pulp"));
+    assert!(rendered.contains("Slow Pulp - Falling Apart Live"));
+    assert!(rendered.contains("https://www.youtube.com/watch?v=abc123"));
+    assert!(rendered.contains("3:35"));
+}
+
+#[test]
+fn render_search_json_has_results_array() {
+    let payload = SearchPayload {
+        query: "slow pulp".into(),
+        limit: 1,
+        results: Vec::new(),
+    };
+
+    let rendered = super::render_search_for_test(&payload, ResponseFormat::Json);
+    let value: serde_json::Value = serde_json::from_str(&rendered).unwrap();
+
+    assert_eq!(value["query"], "slow pulp");
+    assert_eq!(value["results"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn run_search_json_uses_fake_ytdlp_and_records_effective_args() {
+    let dir = tempfile::tempdir().unwrap();
+    let ytdlp = write_fake_search_ytdlp(dir.path(), "args.txt");
+
+    let mut cfg = test_config();
+    cfg.ytdlp_path = Some(ytdlp.display().to_string());
+    cfg.extractor_args = Some("youtube:player_client=android".into());
+
+    let output = run_search(
+        &cfg,
+        SearchInput {
+            query: "  slow pulp live  ".into(),
+            limit: 100,
+            response_format: ResponseFormat::Json,
+        },
+    )
+    .await
+    .unwrap();
+
+    let value: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(value["query"], "slow pulp live");
+    assert_eq!(value["limit"], 25);
+    assert_eq!(
+        value["results"][0]["url"],
+        "https://www.youtube.com/watch?v=fake123"
+    );
+
+    let args = std::fs::read_to_string(dir.path().join("args.txt")).unwrap();
+    assert!(args.contains("--extractor-args"));
+    assert!(args.contains("youtube:player_client=android"));
+    assert!(args.contains("ytsearch25:slow pulp live"));
+}
+
+#[tokio::test]
+async fn run_search_rejects_empty_query_before_tool_resolution() {
+    let mut cfg = test_config();
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+
+    let err = run_search(
+        &cfg,
+        SearchInput {
+            query: "   ".into(),
+            limit: 10,
+            response_format: ResponseFormat::Json,
+        },
+    )
+    .await
+    .unwrap_err()
+    .to_string();
+
+    assert_eq!(err, "Search query cannot be empty.");
+}
+
 #[tokio::test]
 async fn invalid_transfer_target_is_rejected_before_tool_resolution() {
     let mut cfg = test_config();
@@ -134,12 +232,7 @@ async fn run_download_json_reports_partial_status_with_fake_runtime() {
     std::fs::create_dir_all(&staging).unwrap();
     let fake = write_fake_runtime(&bin);
 
-    let old_path = std::env::var_os("PATH");
-    let mut path_entries = vec![bin.clone()];
-    if let Some(old_path) = &old_path {
-        path_entries.extend(std::env::split_paths(old_path));
-    }
-    std::env::set_var("PATH", std::env::join_paths(path_entries).unwrap());
+    let _path = PathOverride::prepend(bin.clone());
 
     let mut cfg = test_config();
     cfg.ytdlp_path = Some(fake.ytdlp.display().to_string());
@@ -158,12 +251,6 @@ async fn run_download_json_reports_partial_status_with_fake_runtime() {
 
     let output = run_download(&cfg, input).await;
 
-    if let Some(old_path) = old_path {
-        std::env::set_var("PATH", old_path);
-    } else {
-        std::env::remove_var("PATH");
-    }
-
     let value: serde_json::Value = serde_json::from_str(&output.unwrap()).unwrap();
     assert_eq!(value["transferred"], true);
     assert_eq!(value["partial_items"], 1);
@@ -173,6 +260,77 @@ async fn run_download_json_reports_partial_status_with_fake_runtime() {
     assert_eq!(value["items"][0]["status"], "partial");
     assert_eq!(value["items"][0]["error"], "audio pass failed");
     assert_eq!(value["items"][0]["files"][0]["kind"], "video");
+}
+
+#[cfg(unix)]
+fn write_fake_search_ytdlp(dir: &std::path::Path, args_file: &str) -> PathBuf {
+    use std::io::Write;
+    use std::os::unix::fs::PermissionsExt;
+
+    let ytdlp = dir.join("yt-dlp");
+    let args_path = dir.join(args_file);
+    let mut file = std::fs::File::create(&ytdlp).unwrap();
+    write!(
+        file,
+        r#"#!/bin/sh
+set -eu
+printf '%s\n' "$*" > '{}'
+cat <<'JSON'
+{{"entries":[{{"id":"fake123","title":"Fake Search Result","url":"fake123","uploader":"Fake Channel","duration":187}}]}}
+JSON
+"#,
+        args_path.display()
+    )
+    .unwrap();
+    file.sync_all().unwrap();
+    drop(file);
+    let mut perms = std::fs::metadata(&ytdlp).unwrap().permissions();
+    perms.set_mode(0o755);
+    std::fs::set_permissions(&ytdlp, perms).unwrap();
+    ytdlp
+}
+
+#[cfg(windows)]
+fn write_fake_search_ytdlp(dir: &std::path::Path, args_file: &str) -> PathBuf {
+    let ytdlp = dir.join("yt-dlp.cmd");
+    let args_path = dir.join(args_file);
+    std::fs::write(
+        &ytdlp,
+        format!(
+            "@echo %* > \"{}\"\r\n@echo {{\"entries\":[{{\"id\":\"fake123\",\"title\":\"Fake Search Result\",\"url\":\"fake123\",\"uploader\":\"Fake Channel\",\"duration\":187}}]}}\r\n",
+            args_path.display()
+        ),
+    )
+    .unwrap();
+    ytdlp
+}
+
+struct PathOverride {
+    old_path: Option<OsString>,
+}
+
+impl PathOverride {
+    fn prepend(path: PathBuf) -> Self {
+        let old_path = std::env::var_os("PATH");
+        let mut path_entries = vec![path];
+        if let Some(old_path) = &old_path {
+            path_entries.extend(std::env::split_paths(old_path));
+        }
+
+        std::env::set_var("PATH", std::env::join_paths(path_entries).unwrap());
+
+        Self { old_path }
+    }
+}
+
+impl Drop for PathOverride {
+    fn drop(&mut self) {
+        if let Some(old_path) = self.old_path.take() {
+            std::env::set_var("PATH", old_path);
+        } else {
+            std::env::remove_var("PATH");
+        }
+    }
 }
 
 struct FakeRuntime {

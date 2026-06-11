@@ -9,6 +9,7 @@ mod config;
 mod downloader;
 mod mcp;
 mod model;
+mod search_app;
 mod service;
 mod setup;
 mod transfer;

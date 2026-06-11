@@ -13,7 +13,7 @@ use tokio::io::AsyncReadExt;
 use tokio::process::Command;
 
 use crate::bootstrap::Tools;
-use crate::model::{AudioFormat, DownloadMode, VideoContainer};
+use crate::model::{AudioFormat, DownloadMode, SearchResultItem, VideoContainer};
 
 /// Field separator embedded in the `--print` template (unit separator, unlikely
 /// to appear in titles).
@@ -331,6 +331,88 @@ pub async fn probe(
             .filter(|n| *n > 0);
     }
     r
+}
+
+pub(crate) fn parse_search_json(bytes: &[u8]) -> Result<Vec<SearchResultItem>> {
+    let info: serde_json::Value = serde_json::from_slice(bytes)?;
+    let Some(entries) = info.get("entries").and_then(|entries| entries.as_array()) else {
+        let keys = info
+            .as_object()
+            .map(|object| object.keys().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+        anyhow::bail!(
+            "yt-dlp search JSON did not contain an entries array; top-level keys: {keys:?}"
+        );
+    };
+
+    let results = entries
+        .iter()
+        .filter_map(search_result_item)
+        .collect::<Vec<_>>();
+
+    Ok(results)
+}
+
+fn search_result_item(entry: &serde_json::Value) -> Option<SearchResultItem> {
+    if entry.is_null() {
+        return None;
+    }
+    let title = str_field(entry, "title")?;
+    let url = search_result_url(entry)?;
+    Some(SearchResultItem {
+        title,
+        url,
+        video_id: str_field(entry, "id"),
+        uploader: str_field(entry, "uploader").or_else(|| str_field(entry, "channel")),
+        duration: entry.get("duration").and_then(|d| d.as_f64()),
+        thumbnail: str_field(entry, "thumbnail"),
+        view_count: entry.get("view_count").and_then(|v| v.as_u64()),
+    })
+}
+
+fn search_result_url(entry: &serde_json::Value) -> Option<String> {
+    if let Some(url) = str_field(entry, "webpage_url") {
+        return Some(url);
+    }
+    if let Some(url) = str_field(entry, "url").filter(|url| is_http_url(url)) {
+        return Some(url);
+    }
+    str_field(entry, "id").map(|id| format!("https://www.youtube.com/watch?v={id}"))
+}
+
+fn is_http_url(value: &str) -> bool {
+    value.starts_with("https://") || value.starts_with("http://")
+}
+
+pub(crate) fn search_spec(query: &str, limit: u32) -> String {
+    format!("ytsearch{}:{}", limit.clamp(1, 25), query.trim())
+}
+
+pub async fn search_youtube(
+    ytdlp: &Path,
+    query: &str,
+    limit: u32,
+    extractor_args: Option<&str>,
+    timeout: Option<Duration>,
+) -> Result<Vec<SearchResultItem>> {
+    let mut cmd = Command::new(ytdlp);
+    cmd.args([
+        "--dump-single-json",
+        "--skip-download",
+        "--no-warnings",
+        "--quiet",
+    ]);
+    if let Some(extra) = extractor_args {
+        cmd.arg("--extractor-args").arg(extra);
+    }
+    cmd.arg(search_spec(query, limit));
+
+    let output = run_command(&mut cmd, timeout).await?;
+    if !output.status.success() {
+        bail!("{}", command_error_text(&output.stderr, &output.stdout));
+    }
+
+    parse_search_json(&output.stdout)
 }
 
 fn str_field(v: &serde_json::Value, key: &str) -> Option<String> {

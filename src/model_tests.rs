@@ -58,6 +58,24 @@ fn download_input_honors_explicit_fields() {
 }
 
 #[test]
+fn search_input_defaults_limit_and_markdown() {
+    let input: SearchInput = serde_json::from_str(r#"{"query":"slow pulp live"}"#).unwrap();
+
+    assert_eq!(input.query, "slow pulp live");
+    assert_eq!(input.limit, 10);
+    assert_eq!(input.response_format, ResponseFormat::Markdown);
+}
+
+#[test]
+fn search_input_clamps_limit_to_supported_range() {
+    let low: SearchInput = serde_json::from_str(r#"{"query":"x","limit":0}"#).unwrap();
+    let high: SearchInput = serde_json::from_str(r#"{"query":"x","limit":100}"#).unwrap();
+
+    assert_eq!(low.effective_limit(), 1);
+    assert_eq!(high.effective_limit(), 25);
+}
+
+#[test]
 fn enum_strings_match_cli_values() {
     assert_eq!(AudioFormat::M4a.as_str(), "m4a");
     assert_eq!(VideoContainer::Mkv.as_str(), "mkv");
