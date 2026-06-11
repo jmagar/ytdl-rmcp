@@ -30,6 +30,8 @@ needs neither pre-installed — the one binary is the whole install.
   copy is kept for retry.
 - **Repeat-safe** — `use_archive` records downloaded IDs (per mode) and skips
   them on later runs; YouTube mix/radio URLs are auto-cleaned to the seed video.
+- **Stats-ready ledger** — every completed download call appends a JSONL entry
+  with timestamp, destinations, files, bytes, uploader, and transfer status.
 
 ## Tools
 
@@ -39,6 +41,7 @@ needs neither pre-installed — the one binary is the whole install.
 | `youtube_search_ui` | Open an interactive YouTube search UI in MCP App-capable hosts. |
 | `youtube_download` | Download one or more URLs (audio/video/both) and rsync/scp them to a remote dir. |
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
+| `youtube_stats` | Summarize the download ledger: totals, file kinds, uploaders, and recent entries. |
 
 ### `youtube_download` parameters
 
@@ -69,6 +72,13 @@ needs neither pre-installed — the one binary is the whole install.
 
 `youtube_search_ui` accepts the same input and returns the same search payload,
 plus MCP App metadata for hosts that can render the embedded UI.
+
+### `youtube_stats` parameters
+
+| Param | Default | Meaning |
+| --- | --- | --- |
+| `limit` | `10` | Number of recent ledger entries to include, clamped to `0..=100`. |
+| `response_format` | `markdown` | `markdown` or `json`. |
 
 ## Install
 
@@ -119,6 +129,7 @@ gemini mcp add -s user ytdl-mcp /path/to/ytdl-mcp -e YTDLP_REMOTE=tootie -e YTDL
 | `YTDLP_STAGING_DIR` | system temp | Local staging base dir. |
 | `YTDLP_SSH_OPTS` | — | Extra ssh options parsed with shell-word syntax; appended after the forced `BatchMode`/`StrictHostKeyChecking` flags. Example: `-i "~/.ssh/ytdl key" -o ProxyJump=media-bastion`. Malformed quoting is rejected. |
 | `YTDLP_ARCHIVE_DIR` | per-user state dir | Where `use_archive` history lives. |
+| `YTDLP_HISTORY_PATH` | per-user state dir `downloads.jsonl` | JSONL download ledger used by `youtube_stats`. |
 | `YTDLP_AUTO_UPDATE` | `1` | Re-download yt-dlp when stale. |
 | `YTDLP_MAX_AGE_DAYS` | `14` | Staleness threshold (days). |
 | `YTDLP_UPDATE_PRE` | `0` | Track yt-dlp's nightly channel. |
@@ -188,7 +199,8 @@ Bare invocation serves MCP over stdio; `setup` runs the installer. A
    (`staging/audio`, `staging/video`) with metadata/thumbnail/archive flags and
    the `Artist/Title [id]` output template.
 3. Transfers each kind's subtree to its own remote dir (rsync, else scp).
-4. Returns a markdown or JSON summary listing files, sizes, and the actual
+4. Appends the completed call to the JSONL download ledger.
+5. Returns a markdown or JSON summary listing files, sizes, and the actual
    destination(s).
 
 See `CLAUDE.md` for architecture, conventions, and gotchas.

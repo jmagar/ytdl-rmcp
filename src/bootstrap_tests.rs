@@ -9,6 +9,7 @@ fn test_config() -> Config {
         audio_format: "mp3".into(),
         ssh_opts: vec![],
         archive_dir: None,
+        history_path: None,
         auto_update: false,
         max_age_days: 14,
         update_pre: false,

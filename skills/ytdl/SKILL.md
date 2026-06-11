@@ -9,7 +9,7 @@ Download media from any [yt-dlp](https://github.com/yt-dlp/yt-dlp)-supported sit
 audio, video, or both, embed proper metadata + cover art, and transfer the result
 to an SSH remote configured when the plugin was enabled.
 
-Four MCP tools are provided by the bundled `youtube-dl` server:
+Five MCP tools are provided by the bundled `youtube-dl` server:
 
 | Tool | Purpose |
 | --- | --- |
@@ -17,6 +17,7 @@ Four MCP tools are provided by the bundled `youtube-dl` server:
 | `youtube_search_ui` | Open an interactive YouTube search UI in MCP App-capable hosts. |
 | `youtube_download` | Download one or more URLs and transfer them to the remote with rsync or scp. |
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
+| `youtube_stats` | Summarize the persistent download ledger with totals, kinds, uploaders, and recent entries. |
 
 ## Defaults
 
@@ -73,6 +74,12 @@ Check a target before a big download:
 youtube_probe(urls="https://...")
 ```
 
+Review download totals and recent entries:
+
+```
+youtube_stats(limit=10)
+```
+
 ## Notes
 
 - **YouTube mix/radio URLs** (`list=RD...`, `&start_radio=1`) are auto-cleaned to the
@@ -80,6 +87,8 @@ youtube_probe(urls="https://...")
 - **Playlists** are downloaded fully and flattened into per-artist folders.
 - On transfer failure the local staging copy is kept so the operation can be retried;
   on success it is removed unless `keep_local=true`.
+- Completed download calls are appended to a JSONL ledger, defaulting to the
+  per-user state dir. Set `YTDLP_HISTORY_PATH` to put it somewhere specific.
 - yt-dlp auto-updates at server startup when stale (configurable), so a fresh session
   self-heals against extractor breakage.
 - yt-dlp and ffmpeg are resolved automatically: explicit env path, then `PATH`,

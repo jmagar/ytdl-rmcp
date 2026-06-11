@@ -12,6 +12,16 @@ pub enum DownloadMode {
     Both,
 }
 
+impl DownloadMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            DownloadMode::Audio => "audio",
+            DownloadMode::Video => "video",
+            DownloadMode::Both => "both",
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "lowercase")]
 pub enum AudioFormat {
@@ -175,6 +185,27 @@ pub struct SearchInput {
 impl SearchInput {
     pub fn effective_limit(&self) -> u32 {
         self.limit.clamp(1, 25)
+    }
+}
+
+fn default_stats_limit() -> usize {
+    10
+}
+
+/// Input for `youtube_stats`.
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+pub struct StatsInput {
+    /// Number of recent history entries to include. Clamped to 0..=100.
+    #[serde(default = "default_stats_limit")]
+    pub limit: usize,
+    /// 'markdown' (human-readable) or 'json' (machine-readable).
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+impl StatsInput {
+    pub fn effective_limit(&self) -> usize {
+        self.limit.min(100)
     }
 }
 

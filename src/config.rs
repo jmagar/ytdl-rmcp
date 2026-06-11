@@ -29,6 +29,7 @@ pub struct Config {
     /// Extra ssh options appended after [`DEFAULT_SSH_OPTS`].
     pub ssh_opts: Vec<String>,
     pub archive_dir: Option<String>,
+    pub history_path: Option<String>,
     pub auto_update: bool,
     pub max_age_days: i64,
     pub update_pre: bool,
@@ -62,6 +63,7 @@ impl Config {
             audio_format: non_empty("YTDLP_AUDIO_FORMAT").unwrap_or_else(|| "mp3".into()),
             ssh_opts,
             archive_dir: non_empty("YTDLP_ARCHIVE_DIR"),
+            history_path: non_empty("YTDLP_HISTORY_PATH"),
             auto_update: as_bool("YTDLP_AUTO_UPDATE", true),
             max_age_days: as_int("YTDLP_MAX_AGE_DAYS", 14),
             update_pre: as_bool("YTDLP_UPDATE_PRE", false),

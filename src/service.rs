@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use crate::bootstrap;
 use crate::config::Config;
 use crate::downloader::{self, FetchOptions, ItemResult};
-use crate::model::{DownloadInput, ProbeInput, SearchInput, SearchPayload};
+use crate::model::{DownloadInput, ProbeInput, SearchInput, SearchPayload, StatsInput};
 use crate::urls::strip_mix_params;
 
 use format::{
@@ -105,6 +105,7 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
         }
         // Archive hit / genuinely empty — succeed with a no-op summary.
         let payload = download_payload(&results, &remote, &[], true, None, None);
+        crate::history::append_download(cfg, input.mode, &payload)?;
         return Ok(render(
             &payload,
             input.response_format,
@@ -170,6 +171,7 @@ pub async fn run_download(cfg: &Config, input: DownloadInput) -> Result<String> 
         transfer_error.clone(),
         staging_kept.as_deref(),
     );
+    crate::history::append_download(cfg, input.mode, &payload)?;
     Ok(render(
         &payload,
         input.response_format,
@@ -252,6 +254,15 @@ pub async fn run_search(cfg: &Config, input: SearchInput) -> Result<String> {
         &serde_json::to_value(&payload)?,
         input.response_format,
         render_search_markdown,
+    ))
+}
+
+pub fn run_stats(cfg: &Config, input: StatsInput) -> Result<String> {
+    let payload = crate::history::stats_payload(cfg, input.effective_limit())?;
+    Ok(render(
+        &payload,
+        input.response_format,
+        crate::history::render_stats_markdown,
     ))
 }
 

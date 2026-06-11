@@ -2124,6 +2124,7 @@ name = "ytdl-mcp"
 version = "0.4.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap",
  "dialoguer",
  "directories",
