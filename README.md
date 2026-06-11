@@ -35,6 +35,8 @@ needs neither pre-installed — the one binary is the whole install.
 
 | Tool | Purpose |
 | --- | --- |
+| `youtube_search` | Search YouTube with yt-dlp and return result URLs without downloading. |
+| `youtube_search_ui` | Open an interactive YouTube search UI in MCP App-capable hosts. |
 | `youtube_download` | Download one or more URLs (audio/video/both) and rsync/scp them to a remote dir. |
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
 
@@ -56,6 +58,17 @@ needs neither pre-installed — the one binary is the whole install.
 | `response_format` | `markdown` | `markdown` or `json`. |
 
 `youtube_probe` takes `urls` and `response_format`.
+
+### `youtube_search` parameters
+
+| Param | Default | Meaning |
+| --- | --- | --- |
+| `query` | - (required) | YouTube search text. The server passes this to yt-dlp as `ytsearchN:<query>`. |
+| `limit` | `10` | Number of results, clamped to `1..=25`. |
+| `response_format` | `markdown` | `markdown` or `json`. |
+
+`youtube_search_ui` accepts the same input and returns the same search payload,
+plus MCP App metadata for hosts that can render the embedded UI.
 
 ## Install
 
