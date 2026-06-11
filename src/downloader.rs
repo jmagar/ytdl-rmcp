@@ -336,7 +336,13 @@ pub async fn probe(
 pub(crate) fn parse_search_json(bytes: &[u8]) -> Result<Vec<SearchResultItem>> {
     let info: serde_json::Value = serde_json::from_slice(bytes)?;
     let Some(entries) = info.get("entries").and_then(|entries| entries.as_array()) else {
-        return Ok(Vec::new());
+        let keys = info
+            .as_object()
+            .map(|object| object.keys().cloned().collect::<Vec<_>>())
+            .unwrap_or_default();
+        anyhow::bail!(
+            "yt-dlp search JSON did not contain an entries array; top-level keys: {keys:?}"
+        );
     };
 
     let results = entries
@@ -352,7 +358,7 @@ fn search_result_item(entry: &serde_json::Value) -> Option<SearchResultItem> {
         return None;
     }
     let title = str_field(entry, "title")?;
-    let url = str_field(entry, "webpage_url").or_else(|| str_field(entry, "url"))?;
+    let url = search_result_url(entry)?;
     Some(SearchResultItem {
         title,
         url,
@@ -362,6 +368,20 @@ fn search_result_item(entry: &serde_json::Value) -> Option<SearchResultItem> {
         thumbnail: str_field(entry, "thumbnail"),
         view_count: entry.get("view_count").and_then(|v| v.as_u64()),
     })
+}
+
+fn search_result_url(entry: &serde_json::Value) -> Option<String> {
+    if let Some(url) = str_field(entry, "webpage_url") {
+        return Some(url);
+    }
+    if let Some(url) = str_field(entry, "url").filter(|url| is_http_url(url)) {
+        return Some(url);
+    }
+    str_field(entry, "id").map(|id| format!("https://www.youtube.com/watch?v={id}"))
+}
+
+fn is_http_url(value: &str) -> bool {
+    value.starts_with("https://") || value.starts_with("http://")
 }
 
 pub(crate) fn search_spec(query: &str, limit: u32) -> String {

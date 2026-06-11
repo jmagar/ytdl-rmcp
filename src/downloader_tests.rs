@@ -83,6 +83,41 @@ fn parse_search_json_extracts_youtube_entries() {
 }
 
 #[test]
+fn parse_search_json_handles_edge_cases() {
+    assert!(super::parse_search_json(b"not json").is_err());
+    let missing_entries = super::parse_search_json(br#"{"title":"empty"}"#)
+        .unwrap_err()
+        .to_string();
+    assert!(missing_entries.contains("did not contain an entries array"));
+    assert!(missing_entries.contains("title"));
+
+    let json = br#"{
+      "entries": [
+        { "title": "Missing URL" },
+        { "webpage_url": "https://www.youtube.com/watch?v=no-title" },
+        {
+          "title": "Canonical URL",
+          "webpage_url": "https://www.youtube.com/watch?v=canonical",
+          "url": "https://youtube.com/shorts/raw"
+        },
+        {
+          "id": "idonly123",
+          "title": "ID Only",
+          "url": "idonly123"
+        }
+      ]
+    }"#;
+
+    let results = super::parse_search_json(json).unwrap();
+
+    assert_eq!(results.len(), 2);
+    assert_eq!(results[0].title, "Canonical URL");
+    assert_eq!(results[0].url, "https://www.youtube.com/watch?v=canonical");
+    assert_eq!(results[1].title, "ID Only");
+    assert_eq!(results[1].url, "https://www.youtube.com/watch?v=idonly123");
+}
+
+#[test]
 fn search_query_spec_uses_ytsearch_limit_prefix() {
     assert_eq!(super::search_spec("tiny desk", 7), "ytsearch7:tiny desk");
     assert_eq!(

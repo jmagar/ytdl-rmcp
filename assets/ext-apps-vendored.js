@@ -10,7 +10,7 @@ var McpExtAppsBundle=(()=>{var Kg=Object.defineProperty;var Ge=(t=>typeof requir
             })));
           }
         }
-        
+
         if (${F}.value === undefined) {
           if (${te} in input) {
             newResult[${te}] = undefined;
@@ -18,7 +18,7 @@ var McpExtAppsBundle=(()=>{var Kg=Object.defineProperty;var Ge=(t=>typeof requir
         } else {
           newResult[${te}] = ${F}.value;
         }
-        
+
       `):gp?$.write(`
         if (${F}.issues.length) {
           payload.issues = payload.issues.concat(${F}.issues.map(iss => ({
@@ -26,7 +26,7 @@ var McpExtAppsBundle=(()=>{var Kg=Object.defineProperty;var Ge=(t=>typeof requir
             path: iss.path ? [${te}, ...iss.path] : [${te}]
           })));
         }
-        
+
         if (${F}.value === undefined) {
           if (${te} in input) {
             newResult[${te}] = undefined;
@@ -34,7 +34,7 @@ var McpExtAppsBundle=(()=>{var Kg=Object.defineProperty;var Ge=(t=>typeof requir
         } else {
           newResult[${te}] = ${F}.value;
         }
-        
+
       `):$.write(`
         const ${F}_present = ${te} in input;
         if (${F}.issues.length) {

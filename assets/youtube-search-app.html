@@ -162,6 +162,10 @@
       resultsEl.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
     }
 
+    function prependStatus(message) {
+      resultsEl.insertAdjacentHTML("afterbegin", `<div class="empty">${escapeHtml(message)}</div>`);
+    }
+
     function render(results) {
       if (!results || results.length === 0) {
         showStatus("No results.");
@@ -184,16 +188,23 @@
       `).join("");
     }
 
+    function toolText(result, fallback) {
+      return result?.content?.find((item) => item.type === "text")?.text || fallback;
+    }
+
     function parseResult(result) {
+      if (result?.isError) {
+        throw new Error(toolText(result, "Search failed."));
+      }
       if (result?.structuredContent?.results) {
         return result.structuredContent;
       }
       const text = result?.content?.find((item) => item.type === "text")?.text;
-      if (!text) return { results: [] };
+      if (!text) throw new Error("Search returned no readable payload.");
       try {
         return JSON.parse(text);
-      } catch {
-        return { results: [] };
+      } catch (error) {
+        throw new Error(`Search returned invalid JSON: ${error.message}`);
       }
     }
 
@@ -239,8 +250,8 @@
           arguments: { query, limit: 10, response_format: "json" }
         });
         renderPayload(response);
-      } catch {
-        showStatus("Search failed.");
+      } catch (error) {
+        showStatus(error.message || "Search failed.");
       }
     });
 
@@ -252,9 +263,13 @@
       const toolCall = actionToolCall(action, url);
       if (!toolCall) return;
       try {
-        await app.callServerTool(toolCall);
-      } catch {
-        resultsEl.insertAdjacentHTML("afterbegin", '<div class="empty">Action failed.</div>');
+        const response = await app.callServerTool(toolCall);
+        if (response?.isError) {
+          throw new Error(toolText(response, "Action failed."));
+        }
+        prependStatus(toolText(response, "Action completed."));
+      } catch (error) {
+        prependStatus(error.message || "Action failed.");
       }
     });
 

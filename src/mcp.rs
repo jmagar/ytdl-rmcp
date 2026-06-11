@@ -1,4 +1,4 @@
-//! The rmcp `ServerHandler` — advertises and dispatches the two tools.
+//! The rmcp `ServerHandler` — advertises and dispatches the MCP tools.
 
 use std::sync::Arc;
 
@@ -23,6 +23,10 @@ fn text_tool_result<E: std::fmt::Display>(
         Err(e) => error_tool_result(e),
     })
 }
+
+#[cfg(test)]
+#[path = "mcp_tests.rs"]
+mod tests;
 
 fn error_tool_result(error: impl std::fmt::Display) -> CallToolResult {
     CallToolResult::error(vec![Content::text(format!("Error: {error}"))])
@@ -91,10 +95,11 @@ impl YtdlServer {
     /// Open the interactive YouTube search MCP App. UI-capable hosts render the
     /// embedded Aurora search panel; other hosts receive text fallback results.
     #[tool(
-    name = "youtube_search_ui",
-    description = "Open an interactive YouTube search UI for selecting videos to probe or download.",
-    meta = search_app::tool_meta()
-)]
+        name = "youtube_search_ui",
+        description = "Open an interactive YouTube search UI for selecting videos to probe or download.",
+        meta = search_app::tool_meta(),
+        output_schema = rmcp::handler::server::tool::schema_for_type::<crate::model::SearchPayload>()
+    )]
     async fn youtube_search_ui(
         &self,
         Parameters(input): Parameters<SearchInput>,
