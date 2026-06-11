@@ -10,6 +10,7 @@
         "YTDLP_SSH_OPTS": "${user_config.ssh_opts}",
         "YTDLP_STAGING_DIR": "${user_config.staging_dir}",
         "YTDLP_ARCHIVE_DIR": "${user_config.archive_dir}",
+        "YTDLP_HISTORY_PATH": "${user_config.history_path}",
         "YTDLP_AUTO_UPDATE": "${user_config.auto_update}",
         "YTDLP_MAX_AGE_DAYS": "${user_config.max_age_days}",
         "YTDLP_UPDATE_PRE": "${user_config.update_pre}",

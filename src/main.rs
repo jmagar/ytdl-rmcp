@@ -7,6 +7,7 @@
 mod bootstrap;
 mod config;
 mod downloader;
+mod history;
 mod mcp;
 mod model;
 mod search_app;

@@ -11,7 +11,7 @@ use rmcp::model::{
 use rmcp::{tool, tool_handler, tool_router, ErrorData, RoleServer, ServerHandler};
 
 use crate::config::Config;
-use crate::model::{DownloadInput, ProbeInput, SearchInput};
+use crate::model::{DownloadInput, ProbeInput, SearchInput, StatsInput};
 use crate::search_app;
 use crate::service;
 
@@ -90,6 +90,18 @@ impl YtdlServer {
         Parameters(input): Parameters<SearchInput>,
     ) -> Result<CallToolResult, ErrorData> {
         text_tool_result(service::run_search(&self.cfg, input).await)
+    }
+
+    /// Summarize the persistent download ledger written by `youtube_download`.
+    #[tool(
+        name = "youtube_stats",
+        description = "Summarize ytdl-mcp download history, totals, file kinds, uploaders, and recent entries."
+    )]
+    async fn youtube_stats(
+        &self,
+        Parameters(input): Parameters<StatsInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        text_tool_result(service::run_stats(&self.cfg, input))
     }
 
     /// Open the interactive YouTube search MCP App. UI-capable hosts render the

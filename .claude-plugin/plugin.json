@@ -57,6 +57,12 @@
       "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-mcp.",
       "required": false
     },
+    "history_path": {
+      "type": "string",
+      "title": "Download ledger path",
+      "description": "JSONL file where completed download calls are logged for youtube_stats. Defaults to downloads.jsonl in the per-user state dir.",
+      "required": false
+    },
     "auto_update": {
       "type": "boolean",
       "title": "Auto-update yt-dlp",

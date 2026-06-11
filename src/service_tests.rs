@@ -5,8 +5,8 @@ use serde_json::json;
 use super::*;
 use crate::downloader::{ItemResult, MediaFile};
 use crate::model::{
-    AudioFormat, DownloadMode, ResponseFormat, SearchInput, SearchPayload, SearchResultItem, Urls,
-    VideoContainer,
+    AudioFormat, DownloadMode, ResponseFormat, SearchInput, SearchPayload, SearchResultItem,
+    StatsInput, Urls, VideoContainer,
 };
 
 fn media_file(kind: &'static str, name: &str) -> MediaFile {
@@ -26,6 +26,7 @@ fn test_config() -> Config {
         audio_format: "mp3".into(),
         ssh_opts: vec![],
         archive_dir: None,
+        history_path: None,
         auto_update: false,
         max_age_days: 14,
         update_pre: false,
@@ -54,6 +55,102 @@ fn download_input(urls: Urls) -> DownloadInput {
         use_archive: false,
         response_format: ResponseFormat::Markdown,
     }
+}
+
+#[tokio::test]
+async fn run_download_json_appends_history_entry_with_destination_and_files() {
+    use std::sync::OnceLock;
+    use tokio::sync::Mutex;
+
+    static PATH_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+    let _guard = PATH_LOCK.get_or_init(|| Mutex::new(())).lock().await;
+
+    let dir = tempfile::tempdir().unwrap();
+    let bin = dir.path().join("bin");
+    let staging = dir.path().join("staging");
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::create_dir_all(&bin).unwrap();
+    std::fs::create_dir_all(&staging).unwrap();
+    let fake = write_fake_runtime(&bin);
+
+    let _path = PathOverride::prepend(bin.clone());
+
+    let mut cfg = test_config();
+    cfg.ytdlp_path = Some(fake.ytdlp.display().to_string());
+    cfg.ffmpeg_path = Some(fake.ffmpeg.display().to_string());
+    cfg.staging_dir = Some(staging.display().to_string());
+    cfg.history_path = Some(history.display().to_string());
+
+    let input = DownloadInput {
+        mode: DownloadMode::Video,
+        remote: Some("media".into()),
+        dest_path: Some("/audio".into()),
+        video_dest_path: Some("/video".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One(
+            "https://www.youtube.com/watch?v=abc123&list=RDfake".into(),
+        ))
+    };
+
+    let output = run_download(&cfg, input).await.unwrap();
+    let payload: serde_json::Value = serde_json::from_str(&output).unwrap();
+    assert_eq!(payload["transferred"], true);
+
+    let lines = std::fs::read_to_string(&history).unwrap();
+    let entries = lines.lines().collect::<Vec<_>>();
+    assert_eq!(entries.len(), 1);
+    let entry: serde_json::Value = serde_json::from_str(entries[0]).unwrap();
+
+    assert!(entry["timestamp"].as_str().unwrap().contains('T'));
+    assert_eq!(entry["mode"], "video");
+    assert_eq!(entry["remote"], "media");
+    assert_eq!(entry["transferred"], true);
+    assert_eq!(entry["total_files"], 1);
+    assert_eq!(entry["destinations"][0]["kind"], "video");
+    assert_eq!(entry["items"][0]["status"], "ok");
+    assert_eq!(
+        entry["items"][0]["url"],
+        "https://www.youtube.com/watch?v=abc123"
+    );
+    assert_eq!(entry["items"][0]["files"][0]["kind"], "video");
+}
+
+#[test]
+fn run_stats_json_summarizes_history_and_recent_entries() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-06-11T01:00:00Z\",\"mode\":\"audio\",\"remote\":\"tootie\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"status\":\"ok\",\"title\":\"Song A\",\"uploader\":\"Artist A\",\"files\":[{\"kind\":\"audio\",\"bytes\":10}]}]}\n",
+            "{\"timestamp\":\"2026-06-11T02:00:00Z\",\"mode\":\"video\",\"remote\":\"tootie\",\"transferred\":true,\"total_files\":2,\"total_bytes\":50,\"items\":[{\"status\":\"ok\",\"title\":\"Video B\",\"uploader\":\"Artist B\",\"files\":[{\"kind\":\"video\",\"bytes\":30},{\"kind\":\"audio\",\"bytes\":20}]}]}\n"
+        ),
+    )
+    .unwrap();
+
+    let mut cfg = test_config();
+    cfg.history_path = Some(history.display().to_string());
+
+    let output = run_stats(
+        &cfg,
+        StatsInput {
+            limit: 1,
+            response_format: ResponseFormat::Json,
+        },
+    )
+    .unwrap();
+    let value: serde_json::Value = serde_json::from_str(&output).unwrap();
+
+    assert_eq!(value["total_downloads"], 2);
+    assert_eq!(value["total_files"], 3);
+    assert_eq!(value["total_bytes"], 60);
+    assert_eq!(value["by_kind"]["audio"]["files"], 2);
+    assert_eq!(value["by_kind"]["audio"]["downloads"], 2);
+    assert_eq!(value["by_kind"]["video"]["files"], 1);
+    assert_eq!(value["by_kind"]["video"]["downloads"], 1);
+    assert_eq!(value["by_uploader"]["Artist B"]["downloads"], 1);
+    assert_eq!(value["recent"].as_array().unwrap().len(), 1);
+    assert_eq!(value["recent"][0]["items"][0]["title"], "Video B");
 }
 
 #[test]

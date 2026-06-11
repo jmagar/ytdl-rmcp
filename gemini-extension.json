@@ -35,6 +35,11 @@
       "envVar": "YTDLP_SSH_OPTS"
     },
     {
+      "name": "Download ledger path",
+      "description": "JSONL file where completed download calls are logged for youtube_stats. Optional.",
+      "envVar": "YTDLP_HISTORY_PATH"
+    },
+    {
       "name": "yt-dlp extractor args",
       "description": "Passed to yt-dlp's --extractor-args, e.g. youtube:player_client=android. Optional.",
       "envVar": "YTDLP_EXTRACTOR_ARGS"
