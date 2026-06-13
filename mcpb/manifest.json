@@ -24,7 +24,7 @@
     "type": "binary",
     "entry_point": "server/ytdl-mcp",
     "mcp_config": {
-      "command": "server/ytdl-mcp",
+      "command": "${__dirname}/server/ytdl-mcp",
       "args": ["serve"],
       "env": {
         "YTDLP_REMOTE": "${user_config.remote}",
@@ -55,7 +55,7 @@
       },
       "platform_overrides": {
         "win32": {
-          "command": "server/ytdl-mcp.exe"
+          "command": "${__dirname}/server/ytdl-mcp.exe"
         }
       }
     }

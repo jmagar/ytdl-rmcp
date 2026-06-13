@@ -108,6 +108,10 @@ mcpb_manifest="mcpb/manifest.json"
 
 jq -e '.server.type == "binary"' "$mcpb_manifest" >/dev/null \
   || fail "mcpb/manifest.json server.type must be \"binary\""
+jq -e '.server.mcp_config.command | startswith("${__dirname}/")' "$mcpb_manifest" >/dev/null \
+  || fail "mcpb/manifest.json binary command must use \${__dirname}"
+jq -e '.server.mcp_config.platform_overrides.win32.command | startswith("${__dirname}/")' "$mcpb_manifest" >/dev/null \
+  || fail "mcpb/manifest.json win32 binary command must use \${__dirname}"
 
 jq -r '.user_config | keys[]' "$mcpb_manifest" | sort -u > "$tmp_dir/mcpb_keys"
 jq -r '.server.mcp_config.env | .. | strings
@@ -133,6 +137,10 @@ if [ -n "$drift_mcpb_keys" ]; then
   fail "mcpb/manifest.json user_config keys differ from plugin.json userConfig keys: ${drift_mcpb_keys//$'\n'/, }"
 fi
 log "MCP bundle manifest mapping ok"
+
+grep -q 'DXT_OUT' scripts/build-mcpb.sh \
+  || fail "scripts/build-mcpb.sh must publish a legacy .dxt alias"
+log "MCP bundle legacy alias ok"
 
 release_workflow=".github/workflows/release.yml"
 [ -f "$release_workflow" ] || fail "missing $release_workflow"

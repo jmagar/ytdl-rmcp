@@ -10,6 +10,7 @@
 #   LINUX_BIN    path to the linux x86_64 binary   (default target/release/ytdl-mcp)
 #   WINDOWS_BIN  path to the windows x86_64 .exe    (default target/x86_64-pc-windows-msvc/release/ytdl-mcp.exe)
 #   OUT          output bundle path                 (default ytdl-mcp.mcpb)
+#   DXT_OUT      legacy .dxt alias path             (default derived from OUT)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,6 +25,7 @@ fail() {
 LINUX_BIN="${LINUX_BIN:-target/release/ytdl-mcp}"
 WINDOWS_BIN="${WINDOWS_BIN:-target/x86_64-pc-windows-msvc/release/ytdl-mcp.exe}"
 OUT="${OUT:-ytdl-mcp.mcpb}"
+DXT_OUT="${DXT_OUT:-${OUT%.mcpb}.dxt}"
 MANIFEST="mcpb/manifest.json"
 
 [ -f "$MANIFEST" ] || fail "missing $MANIFEST"
@@ -45,4 +47,6 @@ npx -y @anthropic-ai/mcpb validate "$build_dir/manifest.json"
 npx -y @anthropic-ai/mcpb pack "$build_dir" "$OUT"
 
 sha256sum "$OUT" > "$OUT.sha256"
-log "wrote $OUT and $OUT.sha256"
+cp "$OUT" "$DXT_OUT"
+sha256sum "$DXT_OUT" > "$DXT_OUT.sha256"
+log "wrote $OUT, $DXT_OUT, and checksums"

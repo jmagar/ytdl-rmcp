@@ -147,6 +147,8 @@ jobs:
           path: |
             ytdl-mcp.mcpb
             ytdl-mcp.mcpb.sha256
+            ytdl-mcp.dxt
+            ytdl-mcp.dxt.sha256
 
   publish-release:
     needs: [release-meta, build, mcpb]
