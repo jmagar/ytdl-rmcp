@@ -84,6 +84,47 @@ jobs:
           name: ${{ matrix.artifact }}
           path: ${{ matrix.artifact }}
 
+  mcpb:
+    # Bundle the linux + windows binaries into a single .mcpb (MCP bundle) for
+    # one-click install in MCPB-capable desktop hosts.
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download linux binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ytdl-mcp-linux-x86_64
+          path: dist/linux
+
+      - name: Download windows binary
+        uses: actions/download-artifact@v4
+        with:
+          name: ytdl-mcp-windows-x86_64.exe
+          path: dist/windows
+
+      - name: Pack .mcpb
+        env:
+          LINUX_BIN: dist/linux/ytdl-mcp-linux-x86_64
+          WINDOWS_BIN: dist/windows/ytdl-mcp-windows-x86_64.exe
+          OUT: ytdl-mcp.mcpb
+        run: scripts/build-mcpb.sh
+
+      - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ytdl-mcp.mcpb
+            ytdl-mcp.mcpb.sha256
+
+      - name: Upload as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ytdl-mcp.mcpb
+          path: ytdl-mcp.mcpb
+
   test:
     runs-on: ubuntu-latest
     steps:

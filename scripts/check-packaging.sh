@@ -24,6 +24,7 @@ json_files=(
   ".mcp.json"
   "gemini-extension.json"
   "hooks/hooks.json"
+  "mcpb/manifest.json"
 )
 
 for file in "${json_files[@]}"; do
@@ -99,3 +100,36 @@ if [ -n "$unmapped_gemini_env" ]; then
   fail "gemini-extension.json envVars are not present in .mcp.json env mapping: ${unmapped_gemini_env//$'\n'/, }"
 fi
 log "Gemini env mapping ok"
+
+# MCP bundle (.mcpb) manifest: a binary-type server whose user_config and env
+# mapping must stay aligned with the canonical Claude plugin userConfig keys.
+mcpb_manifest="mcpb/manifest.json"
+[ -f "$mcpb_manifest" ] || fail "missing $mcpb_manifest"
+
+jq -e '.server.type == "binary"' "$mcpb_manifest" >/dev/null \
+  || fail "mcpb/manifest.json server.type must be \"binary\""
+
+jq -r '.user_config | keys[]' "$mcpb_manifest" | sort -u > "$tmp_dir/mcpb_keys"
+jq -r '.server.mcp_config.env | .. | strings
+  | capture("\\$\\{user_config\\.(?<key>[A-Za-z0-9_]+)\\}")? | .key' "$mcpb_manifest" \
+  | sort -u > "$tmp_dir/mcpb_env_refs"
+
+[ -s "$tmp_dir/mcpb_keys" ] || fail "mcpb/manifest.json has no user_config keys"
+
+missing_mcpb_keys="$(comm -23 "$tmp_dir/mcpb_env_refs" "$tmp_dir/mcpb_keys")"
+if [ -n "$missing_mcpb_keys" ]; then
+  fail "mcpb/manifest.json env references undeclared user_config keys: ${missing_mcpb_keys//$'\n'/, }"
+fi
+
+unused_mcpb_keys="$(comm -13 "$tmp_dir/mcpb_env_refs" "$tmp_dir/mcpb_keys")"
+if [ -n "$unused_mcpb_keys" ]; then
+  fail "mcpb/manifest.json user_config keys are not mapped in mcp_config.env: ${unused_mcpb_keys//$'\n'/, }"
+fi
+
+# Keep the bundle's user_config keys identical to the Claude plugin's set so the
+# four distribution surfaces never drift apart.
+drift_mcpb_keys="$(comm -3 "$tmp_dir/plugin_keys" "$tmp_dir/mcpb_keys")"
+if [ -n "$drift_mcpb_keys" ]; then
+  fail "mcpb/manifest.json user_config keys differ from plugin.json userConfig keys: ${drift_mcpb_keys//$'\n'/, }"
+fi
+log "MCP bundle manifest mapping ok"

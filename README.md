@@ -171,6 +171,12 @@ gemini mcp add -s user ytdl-mcp /path/to/ytdl-mcp -e YTDLP_REMOTE=tootie -e YTDL
   push to `main`, or build locally with `docker build -t ytdl-mcp:local .`. It
   includes `ffmpeg`, `fpcalc`, `openssh-client`, and `rsync`. See
   [`docs/container.md`](docs/container.md) for MCP and mounted-library examples.
+- **MCP bundle (`.mcpb`)** — `mcpb/manifest.json` defines a `binary`-type
+  bundle for one-click install in MCPB-capable desktop hosts. The
+  `ytdl-mcp.mcpb` asset on each `v*` release packs the linux + windows binaries
+  (`platforms: ["linux", "win32"]`) and prompts for config via the manifest's
+  `user_config`. Build one locally from prebuilt binaries with
+  `scripts/build-mcpb.sh` (needs Node for the `@anthropic-ai/mcpb` CLI).
 
 ## Configuration (environment variables)
 

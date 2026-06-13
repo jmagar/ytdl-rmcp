@@ -94,6 +94,13 @@ invoke the real rustup cargo directly: `~/.cargo/bin/cargo xwin build …`.
   `CLAUDE_PLUGIN_DATA`; `run-server.sh` execs it). Registered in the
   `jmagar/lab` marketplace as `ytdl-mcp`.
 - **Gemini extension**: `gemini-extension.json` (settings → `YTDLP_*` env vars).
+- **MCP bundle**: `mcpb/manifest.json` (`server.type: "binary"`, manifest schema
+  `0.3`). `scripts/build-mcpb.sh` stages the linux + windows binaries into
+  `server/` and runs the `@anthropic-ai/mcpb` CLI to produce `ytdl-mcp.mcpb`; the
+  `mcpb` job in `release.yml` attaches it to `v*` releases. Targets
+  `["linux", "win32"]` only — no macOS binary is built. `check-packaging.sh`
+  enforces that its `user_config` keys and `mcp_config.env` mapping stay in sync
+  with the Claude plugin's `userConfig`.
 
 ## Per-CLI `mcp add` arg ordering (setup.rs)
 

@@ -17,3 +17,7 @@
 .worktrees/
 *.part
 *.ytdl
+
+# Built MCP bundle (produced by scripts/build-mcpb.sh)
+*.mcpb
+*.mcpb.sha256

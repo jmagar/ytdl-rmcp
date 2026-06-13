@@ -192,6 +192,27 @@
       return result?.content?.find((item) => item.type === "text")?.text || fallback;
     }
 
+    // Some MCP hosts (e.g. the lab proxy in "code mode") hide regular tools and
+    // only expose them through a code-execution sandbox the embedded app cannot
+    // reach. They reject our callServerTool with an envelope like
+    // {"error":{"kind":"not_found","message":"tool `youtube_download` is hidden
+    // while code_mode mode is enabled"}}. callServerTool is the only channel an
+    // MCP App has, so translate that into a clear, actionable message instead of
+    // surfacing the raw JSON envelope.
+    function friendlyError(message) {
+      const text = String(message || "");
+      if (/hidden while code[_ ]?mode/i.test(text)) {
+        return "This panel can't reach its YouTube tools while the MCP host is in code mode. Disable code mode on the host to probe, download, or re-search from here.";
+      }
+      try {
+        const inner = JSON.parse(text)?.error?.message;
+        if (inner) return inner;
+      } catch (_) {
+        // Not a JSON envelope; fall through to the original text.
+      }
+      return text || "Action failed.";
+    }
+
     function parseResult(result) {
       if (result?.isError) {
         throw new Error(toolText(result, "Search failed."));
@@ -251,7 +272,7 @@
         });
         renderPayload(response);
       } catch (error) {
-        showStatus(error.message || "Search failed.");
+        showStatus(friendlyError(error.message));
       }
     });
 
@@ -267,9 +288,9 @@
         if (response?.isError) {
           throw new Error(toolText(response, "Action failed."));
         }
-        prependStatus(toolText(response, "Action completed."));
+        prependStatus(friendlyError(toolText(response, "Action completed.")));
       } catch (error) {
-        prependStatus(error.message || "Action failed.");
+        prependStatus(friendlyError(error.message));
       }
     });
 

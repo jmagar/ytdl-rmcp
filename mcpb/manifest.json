@@ -1,0 +1,217 @@
+{
+  "manifest_version": "0.3",
+  "name": "ytdl-mcp",
+  "display_name": "yt-dlp Downloader",
+  "version": "0.5.0",
+  "description": "Download audio/video from any yt-dlp-supported site, tag it, and transfer it to an SSH remote with rsync or scp.",
+  "long_description": "Cross-platform single-binary MCP server. Downloads media with yt-dlp, embeds metadata and cover art, organizes by artist, and rsync/scp's the result to an SSH remote. yt-dlp and ffmpeg are auto-downloaded into a per-user cache on first run, so the bundle only ships the ytdl-mcp binary itself.",
+  "author": {
+    "name": "Jacob Magar"
+  },
+  "homepage": "https://github.com/jmagar/ytdl-mcp",
+  "documentation": "https://github.com/jmagar/ytdl-mcp/blob/main/README.md",
+  "support": "https://github.com/jmagar/ytdl-mcp/issues",
+  "license": "MIT",
+  "keywords": [
+    "yt-dlp",
+    "youtube",
+    "download",
+    "media",
+    "mcp",
+    "rsync"
+  ],
+  "server": {
+    "type": "binary",
+    "entry_point": "server/ytdl-mcp",
+    "mcp_config": {
+      "command": "server/ytdl-mcp",
+      "args": ["serve"],
+      "env": {
+        "YTDLP_REMOTE": "${user_config.remote}",
+        "YTDLP_REMOTE_PATH": "${user_config.audio_dest_path}",
+        "YTDLP_VIDEO_REMOTE_PATH": "${user_config.video_dest_path}",
+        "YTDLP_AUDIO_FORMAT": "${user_config.audio_format}",
+        "YTDLP_SSH_OPTS": "${user_config.ssh_opts}",
+        "YTDLP_STAGING_DIR": "${user_config.staging_dir}",
+        "YTDLP_ARCHIVE_DIR": "${user_config.archive_dir}",
+        "YTDLP_HISTORY_PATH": "${user_config.history_path}",
+        "YTDLP_PLEX_URL": "${user_config.plex_url}",
+        "YTDLP_PLEX_TOKEN": "${user_config.plex_token}",
+        "YTDLP_PLEX_PLAYLIST": "${user_config.plex_playlist}",
+        "YTDLP_AUTO_UPDATE": "${user_config.auto_update}",
+        "YTDLP_MAX_AGE_DAYS": "${user_config.max_age_days}",
+        "YTDLP_UPDATE_PRE": "${user_config.update_pre}",
+        "YTDLP_EXTRACTOR_ARGS": "${user_config.extractor_args}",
+        "YTDLP_PATH": "${user_config.ytdlp_path}",
+        "FFMPEG_PATH": "${user_config.ffmpeg_path}",
+        "YTDLP_TIMEOUT_SECS": "${user_config.ytdlp_timeout_secs}",
+        "YTDLP_TRANSFER_TIMEOUT_SECS": "${user_config.transfer_timeout_secs}",
+        "YTDLP_SHA256": "${user_config.ytdlp_sha256}",
+        "FFMPEG_SHA256": "${user_config.ffmpeg_sha256}"
+      },
+      "platform_overrides": {
+        "win32": {
+          "command": "server/ytdl-mcp.exe"
+        }
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "youtube_download",
+      "description": "Download audio/video from a yt-dlp-supported URL, tag it, and rsync to an SSH remote."
+    },
+    {
+      "name": "youtube_probe",
+      "description": "Inspect media metadata (title, duration, uploader, formats) without downloading."
+    },
+    {
+      "name": "youtube_search",
+      "description": "Search YouTube with yt-dlp and return matching video URLs without downloading."
+    },
+    {
+      "name": "youtube_stats",
+      "description": "Summarize ytdl-mcp download history, totals, file kinds, uploaders, and recent entries."
+    },
+    {
+      "name": "youtube_search_ui",
+      "description": "Open an interactive YouTube search UI for selecting videos to probe or download."
+    }
+  ],
+  "user_config": {
+    "remote": {
+      "type": "string",
+      "title": "SSH remote",
+      "description": "SSH alias (~/.ssh/config) or user@host to transfer downloads to. Passwordless key auth required.",
+      "required": true
+    },
+    "audio_dest_path": {
+      "type": "string",
+      "title": "Audio destination",
+      "description": "Absolute remote directory for audio downloads, e.g. /mnt/user/data/media/music/yt-dlp",
+      "required": true
+    },
+    "video_dest_path": {
+      "type": "string",
+      "title": "Video destination",
+      "description": "Absolute remote directory for video downloads, e.g. /mnt/user/data/media/movies/yt-dlp. Falls back to the audio destination if blank.",
+      "required": false
+    },
+    "audio_format": {
+      "type": "string",
+      "title": "Default audio codec",
+      "description": "Default codec when downloading audio: mp3, m4a, opus, flac, wav, or best.",
+      "default": "mp3"
+    },
+    "ssh_opts": {
+      "type": "string",
+      "title": "Extra SSH options",
+      "description": "Additional ssh options parsed with shell-word syntax, e.g. -i \"~/.ssh/ytdl key\" -o ProxyJump=media-bastion. Appended after -o BatchMode=yes. Malformed quoting is rejected. Optional.",
+      "required": false
+    },
+    "staging_dir": {
+      "type": "directory",
+      "title": "Local staging dir",
+      "description": "Local directory to stage downloads before transfer. Defaults to system temp.",
+      "required": false
+    },
+    "archive_dir": {
+      "type": "directory",
+      "title": "Download archive dir",
+      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-mcp.",
+      "required": false
+    },
+    "history_path": {
+      "type": "string",
+      "title": "Download ledger path",
+      "description": "JSONL file where completed download calls are logged for youtube_stats. Defaults to downloads.jsonl in the per-user state dir.",
+      "required": false
+    },
+    "plex_url": {
+      "type": "string",
+      "title": "Plex server URL",
+      "description": "Optional Plex server base URL, e.g. http://plex.local:32400, used to add downloaded audio tracks to a Plex playlist.",
+      "required": false
+    },
+    "plex_token": {
+      "type": "string",
+      "title": "Plex token",
+      "description": "Optional Plex auth token for playlist/search API calls.",
+      "required": false,
+      "sensitive": true
+    },
+    "plex_playlist": {
+      "type": "string",
+      "title": "Plex playlist",
+      "description": "Optional default Plex playlist title or ID to add downloaded audio tracks to. Can be overridden per youtube_download call.",
+      "required": false
+    },
+    "auto_update": {
+      "type": "boolean",
+      "title": "Auto-update yt-dlp",
+      "description": "Update yt-dlp at server startup when stale. Recommended on — each session relaunch self-heals against extractor breakage.",
+      "default": true
+    },
+    "max_age_days": {
+      "type": "number",
+      "title": "Staleness threshold (days)",
+      "description": "Update yt-dlp when the installed version is older than this many days.",
+      "default": 14,
+      "min": 1,
+      "max": 365
+    },
+    "update_pre": {
+      "type": "boolean",
+      "title": "Track nightly channel",
+      "description": "Update from yt-dlp's nightly pre-release channel instead of stable.",
+      "default": false
+    },
+    "extractor_args": {
+      "type": "string",
+      "title": "yt-dlp extractor args",
+      "description": "Passed to yt-dlp's --extractor-args, e.g. 'youtube:player_client=android' for videos the default clients can't reach. Optional.",
+      "required": false
+    },
+    "ytdlp_path": {
+      "type": "string",
+      "title": "yt-dlp path",
+      "description": "Use a specific yt-dlp executable instead of auto-resolution/auto-download. Optional.",
+      "required": false
+    },
+    "ffmpeg_path": {
+      "type": "string",
+      "title": "ffmpeg path",
+      "description": "Use a specific ffmpeg executable instead of auto-resolution/auto-download. Optional.",
+      "required": false
+    },
+    "ytdlp_timeout_secs": {
+      "type": "number",
+      "title": "yt-dlp timeout (seconds)",
+      "description": "Maximum runtime for each yt-dlp probe/download command.",
+      "default": 1800,
+      "min": 1
+    },
+    "transfer_timeout_secs": {
+      "type": "number",
+      "title": "Transfer timeout (seconds)",
+      "description": "Maximum runtime budget for each transfer phase.",
+      "default": 600,
+      "min": 1
+    },
+    "ytdlp_sha256": {
+      "type": "string",
+      "title": "yt-dlp SHA-256 pin",
+      "description": "Optional SHA-256 digest required for the resolved yt-dlp executable.",
+      "required": false
+    },
+    "ffmpeg_sha256": {
+      "type": "string",
+      "title": "ffmpeg SHA-256 pin",
+      "description": "Optional SHA-256 digest required for the resolved ffmpeg executable.",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["linux", "win32"]
+  }
+}
