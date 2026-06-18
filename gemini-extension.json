@@ -2,12 +2,6 @@
   "name": "ytdl-mcp",
   "version": "0.7.0",
   "description": "Download audio/video from any yt-dlp-supported site, tag it, and transfer it to an SSH remote with rsync or scp.",
-  "mcpServers": {
-    "ytdl-mcp": {
-      "command": "ytdl-mcp",
-      "args": []
-    }
-  },
   "settings": [
     {
       "name": "SSH remote",
