@@ -7,7 +7,7 @@ const { spawnSync } = require("node:child_process");
 const { binaryPath } = require("../lib/platform");
 
 function fail(message) {
-  process.stderr.write(`ytdl-mcp: ${message}\n`);
+  process.stderr.write(`ytdl-rmcp: ${message}\n`);
   process.exit(1);
 }
 

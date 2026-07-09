@@ -3,7 +3,7 @@ use rmcp::model::{
 };
 use serde_json::json;
 
-pub const RESOURCE_URI: &str = "ui://ytdl-mcp/youtube-search.html";
+pub const RESOURCE_URI: &str = "ui://ytdl-rmcp/youtube-search.html";
 pub const RESOURCE_MIME_TYPE: &str = "text/html;profile=mcp-app";
 const HTML_TEMPLATE: &str = include_str!("../assets/youtube-search-app.html");
 const APP_BRIDGE: &str = include_str!("../assets/ext-apps-vendored.js");
@@ -14,7 +14,7 @@ pub fn list_app_resources() -> ListResourcesResult {
     ListResourcesResult {
         resources: vec![RawResource::new(RESOURCE_URI, "youtube-search")
             .with_title("YouTube search")
-            .with_description("Search YouTube and send results to ytdl-mcp actions.")
+            .with_description("Search YouTube and send results to ytdl-rmcp actions.")
             .with_mime_type(RESOURCE_MIME_TYPE)
             .no_annotation()],
         next_cursor: None,

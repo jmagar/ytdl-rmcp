@@ -1,29 +1,29 @@
 ---
 date: 2026-06-12 10:39:48 EST
-repo: git@github.com:jmagar/ytdl-mcp.git
+repo: git@github.com:jmagar/ytdl-rmcp.git
 branch: codex/metadata-playlist-sync
 head: c6a0d62
 session id: e4558680-1081-4d6a-8417-e10f29ef0281
-transcript: /home/jmagar/.claude/projects/-home-jmagar-workspace-ytdl-mcp/e4558680-1081-4d6a-8417-e10f29ef0281.jsonl
-working directory: /home/jmagar/workspace/ytdl-mcp
-worktree: /home/jmagar/workspace/ytdl-mcp c6a0d62 [codex/metadata-playlist-sync]
+transcript: /home/jmagar/.claude/projects/-home-jmagar-workspace-ytdl-rmcp/e4558680-1081-4d6a-8417-e10f29ef0281.jsonl
+working directory: /home/jmagar/workspace/ytdl-rmcp
+worktree: /home/jmagar/workspace/ytdl-rmcp c6a0d62 [codex/metadata-playlist-sync]
 ---
 
 # ytdl metadata and Plex playlist session
 
 ## User Request
 
-Make ytdl-mcp automatically add downloaded tracks to the Plex playlist containing existing yt-dlp downloads, improve embedded metadata, clean and normalize title metadata, and look into MusicBrainz/AcoustID for future canonical metadata matching.
+Make ytdl-rmcp automatically add downloaded tracks to the Plex playlist containing existing yt-dlp downloads, improve embedded metadata, clean and normalize title metadata, and look into MusicBrainz/AcoustID for future canonical metadata matching.
 
 ## Session Overview
 
-This session created the Plex audio playlist `yt-dlp Downloads`, populated it with all 118 currently indexed yt-dlp audio tracks from tootie, added automatic default playlist targeting to ytdl-mcp, preserved richer yt-dlp sidecar metadata, added default-on title metadata cleanup, and documented the recommended MusicBrainz/AcoustID retagging path.
+This session created the Plex audio playlist `yt-dlp Downloads`, populated it with all 118 currently indexed yt-dlp audio tracks from tootie, added automatic default playlist targeting to ytdl-rmcp, preserved richer yt-dlp sidecar metadata, added default-on title metadata cleanup, and documented the recommended MusicBrainz/AcoustID retagging path.
 
 ## Sequence of Events
 
-1. Inspected current ytdl-mcp logs and archive state, confirming `downloads.jsonl` was new and `archive-audio.txt` contained yt-dlp archive IDs without per-item timestamps.
+1. Inspected current ytdl-rmcp logs and archive state, confirming `downloads.jsonl` was new and `archive-audio.txt` contained yt-dlp archive IDs without per-item timestamps.
 2. Inventoried tootie's yt-dlp music folder and Plex library section `9`, then created and populated the Plex playlist `yt-dlp Downloads` with 118 tracks.
-3. Added ytdl-mcp default playlist behavior so Plex URL/token imply `yt-dlp Downloads` unless overridden.
+3. Added ytdl-rmcp default playlist behavior so Plex URL/token imply `yt-dlp Downloads` unless overridden.
 4. Added sidecar metadata preservation and playlist-title album parsing to yt-dlp arguments.
 5. Added configurable title metadata cleanup via `YTDLP_CLEAN_METADATA`, defaulting on, plus docs and tests.
 6. Researched MusicBrainz/AcoustID integration constraints and recorded an opt-in retagging plan.
@@ -51,7 +51,7 @@ This session created the Plex audio playlist `yt-dlp Downloads`, populated it wi
 | --- | --- | --- | --- | --- |
 | modified | `.claude-plugin/plugin.json` | — | Add plugin defaults for Plex playlist and metadata cleanup; bump version to `0.6.0`. | `git diff --stat` |
 | modified | `.mcp.json` | — | Pass `YTDLP_CLEAN_METADATA` from plugin user config into the MCP server environment. | `git diff --stat` |
-| modified | `Cargo.toml` | — | Bump package version to `0.6.0`. | `cargo check` reported `ytdl-mcp v0.6.0` |
+| modified | `Cargo.toml` | — | Bump package version to `0.6.0`. | `cargo check` reported `ytdl-rmcp v0.6.0` |
 | modified | `Cargo.lock` | — | Record the new Rust package version. | `rg` showed `version = "0.6.0"` |
 | modified | `README.md` | — | Document automatic Plex playlist sync, sidecar metadata, metadata cleanup, and MusicBrainz/AcoustID follow-up. | `git diff --stat` |
 | modified | `gemini-extension.json` | — | Expose version and metadata cleanup config for Gemini extension installs. | `git diff --stat` |
@@ -83,7 +83,7 @@ No plan files were found under `docs/plans`; no plan cleanup was performed.
 
 ### Worktrees and branches
 
-`git worktree list --porcelain` showed only `/home/jmagar/workspace/ytdl-mcp`, now on `refs/heads/codex/metadata-playlist-sync`. No worktrees or branches were pruned during quick-push.
+`git worktree list --porcelain` showed only `/home/jmagar/workspace/ytdl-rmcp`, now on `refs/heads/codex/metadata-playlist-sync`. No worktrees or branches were pruned during quick-push.
 
 ### Stale docs
 
@@ -110,7 +110,7 @@ The save-to-md maintenance pass was constrained to read-only checks and document
 | `cargo clippy --all-targets -- -D warnings` | Passed. |
 | `cargo fmt --all --check` | Passed. |
 | yt-dlp simulate command with cleanup flags | Accepted flags and printed the Goose title. |
-| `cargo build --release` | Built `/home/jmagar/workspace/ytdl-mcp/target/release/ytdl-mcp`. |
+| `cargo build --release` | Built `/home/jmagar/workspace/ytdl-rmcp/target/release/ytdl-rmcp`. |
 | `cargo check` | Passed after version bump and updated Cargo.lock to `0.6.0`. |
 
 ## Errors Encountered
@@ -137,14 +137,14 @@ The save-to-md maintenance pass was constrained to read-only checks and document
 | `cargo clippy --all-targets -- -D warnings` | No warnings/errors. | Finished successfully. | pass |
 | `cargo fmt --all --check` | Formatted code. | No diff reported. | pass |
 | yt-dlp simulate with metadata cleanup flags | Real yt-dlp accepts generated flags. | Command exited 0 and printed title. | pass |
-| `cargo build --release` | Release binary rebuilds. | Built `ytdl-mcp 0.5.0` before version bump; `cargo check` later verified `0.6.0`. | pass |
-| `cargo check` | Version bump compiles and updates lockfile. | Checked `ytdl-mcp v0.6.0`. | pass |
+| `cargo build --release` | Release binary rebuilds. | Built `ytdl-rmcp 0.5.0` before version bump; `cargo check` later verified `0.6.0`. | pass |
+| `cargo check` | Version bump compiles and updates lockfile. | Checked `ytdl-rmcp v0.6.0`. | pass |
 
 ## Risks and Rollback
 
 Title cleanup regexes may remove words that a user wants preserved in rare cases. Roll back by setting `YTDLP_CLEAN_METADATA=0`, or revert the metadata cleanup change in `src/downloader.rs` and config wiring.
 
-Automatic Plex playlist sync requires Plex URL/token in the ytdl-mcp environment. If those are absent, downloads still succeed but playlist updates do not run.
+Automatic Plex playlist sync requires Plex URL/token in the ytdl-rmcp environment. If those are absent, downloads still succeed but playlist updates do not run.
 
 ## Decisions Not Taken
 
@@ -161,7 +161,7 @@ Automatic Plex playlist sync requires Plex URL/token in the ytdl-mcp environment
 
 ## Open Questions
 
-- Which AcoustID application key should ytdl-mcp use, and where should it be configured?
+- Which AcoustID application key should ytdl-rmcp use, and where should it be configured?
 - Should fingerprinting use a bootstrapped `fpcalc` binary or a pure-Rust Chromaprint/Symphonia pipeline?
 - What confidence threshold should be required before writing canonical MusicBrainz tags?
 

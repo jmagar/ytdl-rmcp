@@ -1,8 +1,8 @@
 {
   "mcpServers": {
-    "ytdl-mcp": {
+    "ytdl-rmcp": {
       "command": "npx",
-      "args": ["-y", "ytdl-mcp"],
+      "args": ["-y", "ytdl-rmcp"],
       "env": {
         "YTDLP_REMOTE": "${user_config.remote}",
         "YTDLP_REMOTE_PATH": "${user_config.audio_dest_path}",

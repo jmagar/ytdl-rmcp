@@ -1,8 +1,8 @@
-# ytdl-mcp
+# ytdl-rmcp
 
-[![npm version](https://img.shields.io/npm/v/ytdl-mcp.svg)](https://www.npmjs.com/package/ytdl-mcp)
-[![release](https://github.com/jmagar/ytdl-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/jmagar/ytdl-mcp/actions/workflows/release.yml)
-[![CI](https://github.com/jmagar/ytdl-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jmagar/ytdl-mcp/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/ytdl-rmcp.svg)](https://www.npmjs.com/package/ytdl-rmcp)
+[![release](https://github.com/jmagar/ytdl-rmcp/actions/workflows/release.yml/badge.svg)](https://github.com/jmagar/ytdl-rmcp/actions/workflows/release.yml)
+[![CI](https://github.com/jmagar/ytdl-rmcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jmagar/ytdl-rmcp/actions/workflows/ci.yml)
 
 A cross-platform, single-binary **MCP server** that downloads media from any
 [yt-dlp](https://github.com/yt-dlp/yt-dlp)-supported site (YouTube, Vimeo, …),
@@ -30,7 +30,7 @@ needs neither pre-installed — the one binary is the whole install.
 - **Self-contained paths** — the binary downloads/caches yt-dlp + ffmpeg when
   run directly; the container image bakes in ffmpeg, fpcalc, SSH, and rsync for
   media-host batch jobs.
-- **Self-installing** — `ytdl-mcp setup` registers the server into Claude Code,
+- **Self-installing** — `ytdl-rmcp setup` registers the server into Claude Code,
   Codex, and/or Gemini CLI via each tool's own `mcp add`.
 - **Robust transfers** — `rsync --protect-args` when present, `scp` otherwise;
   non-interactive SSH (`BatchMode=yes`, `StrictHostKeyChecking=accept-new`) so a
@@ -173,14 +173,14 @@ ledger append fails, the download response still succeeds and includes
 Run the guided installer through npm:
 
 ```bash
-npx -y ytdl-mcp setup
+npx -y ytdl-rmcp setup
 ```
 
 Or install the command globally:
 
 ```bash
-npm i -g ytdl-mcp
-ytdl-mcp setup
+npm i -g ytdl-rmcp
+ytdl-rmcp setup
 ```
 
 The npm package downloads the matching GitHub Release binary during
@@ -188,52 +188,52 @@ The npm package downloads the matching GitHub Release binary during
 Node launcher. You can also use the one-line installer:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/jmagar/ytdl-mcp/main/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/jmagar/ytdl-rmcp/main/scripts/install.sh | bash
 ```
 
 Or download the binary tarball for your platform from
-[Releases](https://github.com/jmagar/ytdl-mcp/releases), or build it (see below).
+[Releases](https://github.com/jmagar/ytdl-rmcp/releases), or build it (see below).
 The guided setup fetches yt-dlp + ffmpeg, prompts for your SSH remote and
 audio/video destinations, detects which agent CLIs are present, and registers
 the server into the ones you pick.
 
 ### Manual registration
 
-Run without subcommands, `npx -y ytdl-mcp` serves MCP over stdio. Register it
+Run without subcommands, `npx -y ytdl-rmcp` serves MCP over stdio. Register it
 yourself:
 
 ```bash
 # Claude Code
-claude mcp add -s user ytdl-mcp -e YTDLP_REMOTE=tootie -e YTDLP_REMOTE_PATH=/media/music -- npx -y ytdl-mcp
+claude mcp add -s user ytdl-rmcp -e YTDLP_REMOTE=tootie -e YTDLP_REMOTE_PATH=/media/music -- npx -y ytdl-rmcp
 # Codex
-codex  mcp add --env YTDLP_REMOTE=tootie --env YTDLP_REMOTE_PATH=/media/music ytdl-mcp -- npx -y ytdl-mcp
+codex  mcp add --env YTDLP_REMOTE=tootie --env YTDLP_REMOTE_PATH=/media/music ytdl-rmcp -- npx -y ytdl-rmcp
 # Gemini CLI (command is positional, env last)
-gemini mcp add -s user ytdl-mcp npx -y ytdl-mcp -e YTDLP_REMOTE=tootie -e YTDLP_REMOTE_PATH=/media/music
+gemini mcp add -s user ytdl-rmcp npx -y ytdl-rmcp -e YTDLP_REMOTE=tootie -e YTDLP_REMOTE_PATH=/media/music
 ```
 
-If you already installed a standalone binary with `npm i -g ytdl-mcp`,
+If you already installed a standalone binary with `npm i -g ytdl-rmcp`,
 `scripts/install.sh`, or a release tarball, you can use that binary path in
-place of `npx -y ytdl-mcp`.
+place of `npx -y ytdl-rmcp`.
 
 ### Distributed forms
 
-- **npm launcher** — `npx -y ytdl-mcp` downloads and runs the matching
+- **npm launcher** — `npx -y ytdl-rmcp` downloads and runs the matching
   GitHub Release binary. Run without subcommands, it serves MCP over stdio;
-  `npx -y ytdl-mcp setup` runs the guided installer. Stable releases publish
+  `npx -y ytdl-rmcp setup` runs the guided installer. Stable releases publish
   the package from GitHub Actions with npm provenance.
 - **Claude Code plugin** — `.claude-plugin/plugin.json` prompts for config via
-  `userConfig`; `.mcp.json` launches `npx -y ytdl-mcp`, which downloads the
+  `userConfig`; `.mcp.json` launches `npx -y ytdl-rmcp`, which downloads the
   matching GitHub Release binary through npm.
 - **Gemini CLI extension** — `gemini-extension.json`; install with
-  `gemini extensions install https://github.com/jmagar/ytdl-mcp`. MCP clients
-  should prefer the npm launcher command, `npx -y ytdl-mcp`.
-- **Container image** — `ghcr.io/jmagar/ytdl-mcp:main` is published on every
-  push to `main`, or build locally with `docker build -t ytdl-mcp:local .`. It
+  `gemini extensions install https://github.com/jmagar/ytdl-rmcp`. MCP clients
+  should prefer the npm launcher command, `npx -y ytdl-rmcp`.
+- **Container image** — `ghcr.io/jmagar/ytdl-rmcp:main` is published on every
+  push to `main`, or build locally with `docker build -t ytdl-rmcp:local .`. It
   includes `ffmpeg`, `fpcalc`, `openssh-client`, and `rsync`. See
   [`docs/container.md`](docs/container.md) for MCP and mounted-library examples.
 - **MCP bundle (`.mcpb` / `.dxt`)** — `mcpb/manifest.json` defines a
   `binary`-type bundle for one-click install in MCPB-capable desktop hosts.
-  Every main release publishes `ytdl-mcp.mcpb` plus a legacy `ytdl-mcp.dxt`
+  Every main release publishes `ytdl-rmcp.mcpb` plus a legacy `ytdl-rmcp.dxt`
   alias; both contain the same linux + windows binaries. The bundle defaults
   optional config values to empty strings so Claude Desktop can install it
   before you fill in the SSH destination settings. Configure at least the
@@ -371,3 +371,12 @@ See `CLAUDE.md` for architecture, conventions, and gotchas.
 ## License
 
 MIT — see `LICENSE`.
+
+## Rust MCP naming pattern
+
+This repo follows the Rust MCP server naming convention:
+
+- Repo: `ytdl-rmcp`
+- CLI alias: `rytdl`
+- npm package: `ytdl-rmcp`
+

@@ -67,7 +67,7 @@ automatically for downloaded audio files before transfer when
 ambiguous, or errors, the download still proceeds and reports a metadata
 retagging summary in the response.
 
-When tag writing is enabled, ytdl-mcp writes:
+When tag writing is enabled, ytdl-rmcp writes:
 
 - common fields: artist, title, album, album artist, date/release date, track
   number

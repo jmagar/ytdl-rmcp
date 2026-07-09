@@ -71,7 +71,7 @@ pub struct ToolsCache {
 fn default_archive_dir() -> PathBuf {
     bootstrap::project_dirs()
         .map(|d| d.state_dir().unwrap_or_else(|| d.data_dir()).to_path_buf())
-        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-mcp-state"))
+        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-rmcp-state"))
 }
 
 pub async fn run_download(
@@ -114,7 +114,7 @@ pub async fn run_download(
     // call site is the primary fix for option-injection).
     let validated_urls = input.urls.clone().into_validated_vec()?;
     tracing::info!(
-        service = "ytdl-mcp",
+        service = "ytdl-rmcp",
         action = "run_download",
         url_count = validated_urls.len(),
         mode = ?input.mode,
@@ -124,7 +124,7 @@ pub async fn run_download(
     let mut results: Vec<ItemResult> = Vec::new();
     for raw in validated_urls {
         let url = strip_mix_params(&raw);
-        tracing::debug!(service = "ytdl-mcp", action = "fetch", url = %url, mode = ?input.mode, "fetch start");
+        tracing::debug!(service = "ytdl-rmcp", action = "fetch", url = %url, mode = ?input.mode, "fetch start");
         let r = downloader::fetch(
             &tools,
             &url,
@@ -143,10 +143,10 @@ pub async fn run_download(
         .await;
         match r.error.as_deref() {
             None => {
-                tracing::info!(service = "ytdl-mcp", action = "fetch", url = %url, file_count = r.files.len(), "fetch complete")
+                tracing::info!(service = "ytdl-rmcp", action = "fetch", url = %url, file_count = r.files.len(), "fetch complete")
             }
             Some(e) => {
-                tracing::warn!(service = "ytdl-mcp", action = "fetch", url = %url, error = %e, "fetch error")
+                tracing::warn!(service = "ytdl-rmcp", action = "fetch", url = %url, error = %e, "fetch error")
             }
         }
         results.push(r);
@@ -192,7 +192,7 @@ pub async fn run_download(
         }
         let ssh_opts = cfg.all_ssh_opts();
         tracing::info!(
-            service = "ytdl-mcp",
+            service = "ytdl-rmcp",
             action = "transfer",
             kind = %kind,
             remote = %target.remote().as_str(),
@@ -219,7 +219,7 @@ pub async fn run_download(
         match tokio::time::timeout(cfg.transfer_timeout(), transfer).await {
             Ok(Ok(())) => {
                 tracing::info!(
-                    service = "ytdl-mcp",
+                    service = "ytdl-rmcp",
                     action = "transfer",
                     kind = %kind,
                     dest = %dest.as_str(),
@@ -228,7 +228,7 @@ pub async fn run_download(
             }
             Ok(Err(e)) => {
                 tracing::warn!(
-                    service = "ytdl-mcp",
+                    service = "ytdl-rmcp",
                     action = "transfer",
                     kind = %kind,
                     error = %e,
@@ -243,7 +243,7 @@ pub async fn run_download(
                     cfg.transfer_timeout().as_secs()
                 );
                 tracing::warn!(
-                    service = "ytdl-mcp",
+                    service = "ytdl-rmcp",
                     action = "transfer",
                     kind = %kind,
                     timeout_secs = cfg.transfer_timeout().as_secs(),
@@ -279,7 +279,7 @@ pub async fn run_download(
     }
     record_history(cfg, input.mode, &mut payload).await;
     tracing::info!(
-        service = "ytdl-mcp",
+        service = "ytdl-rmcp",
         action = "run_download",
         mode = ?input.mode,
         transferred,
@@ -381,7 +381,7 @@ pub async fn run_probe(cfg: &Arc<Config>, cache: &ToolsCache, input: ProbeInput)
     let ytdlp = ensure_ytdlp(cfg, cache).await?;
     let validated_urls = input.urls.into_validated_vec()?;
     tracing::info!(
-        service = "ytdl-mcp",
+        service = "ytdl-rmcp",
         action = "run_probe",
         url_count = validated_urls.len(),
         "probe start"
@@ -389,7 +389,7 @@ pub async fn run_probe(cfg: &Arc<Config>, cache: &ToolsCache, input: ProbeInput)
     let mut results = Vec::new();
     for raw in validated_urls {
         let url = strip_mix_params(&raw);
-        tracing::debug!(service = "ytdl-mcp", action = "probe", url = %url, "probe url start");
+        tracing::debug!(service = "ytdl-rmcp", action = "probe", url = %url, "probe url start");
         let result = downloader::probe(
             &ytdlp,
             &url,
@@ -399,7 +399,7 @@ pub async fn run_probe(cfg: &Arc<Config>, cache: &ToolsCache, input: ProbeInput)
         .await;
         match result.error.as_deref() {
             None => tracing::info!(
-                service = "ytdl-mcp",
+                service = "ytdl-rmcp",
                 action = "probe",
                 url = %url,
                 title = result.title.as_deref().unwrap_or("(unknown)"),
@@ -407,14 +407,14 @@ pub async fn run_probe(cfg: &Arc<Config>, cache: &ToolsCache, input: ProbeInput)
                 "probe url success"
             ),
             Some(e) => {
-                tracing::warn!(service = "ytdl-mcp", action = "probe", url = %url, error = %e, "probe url error")
+                tracing::warn!(service = "ytdl-rmcp", action = "probe", url = %url, error = %e, "probe url error")
             }
         }
         results.push(result);
     }
     let payload = probe_payload(&results);
     tracing::info!(
-        service = "ytdl-mcp",
+        service = "ytdl-rmcp",
         action = "run_probe",
         elapsed_ms = started.elapsed().as_millis(),
         "probe complete"
@@ -449,7 +449,7 @@ pub async fn run_search_payload(
 
     let ytdlp = ensure_ytdlp(cfg, cache).await?;
     let limit = input.effective_limit();
-    tracing::info!(service = "ytdl-mcp", action = "run_search", query = %query, limit, "search start");
+    tracing::info!(service = "ytdl-rmcp", action = "run_search", query = %query, limit, "search start");
     let results = downloader::search_youtube(
         &ytdlp,
         query,
@@ -460,7 +460,7 @@ pub async fn run_search_payload(
     .await?;
 
     tracing::info!(
-        service = "ytdl-mcp",
+        service = "ytdl-rmcp",
         action = "run_search",
         query = %query,
         result_count = results.len(),

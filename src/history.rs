@@ -27,7 +27,7 @@ fn default_history_path() -> PathBuf {
                 .unwrap_or_else(|| d.data_dir())
                 .join("downloads.jsonl")
         })
-        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-mcp-state/downloads.jsonl"))
+        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-rmcp-state/downloads.jsonl"))
 }
 
 fn history_path(cfg: &Config) -> PathBuf {

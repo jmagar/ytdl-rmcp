@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Assemble the ytdl-mcp MCP bundle (.mcpb) from prebuilt release binaries.
+# Assemble the ytdl-rmcp MCP bundle (.mcpb) from prebuilt release binaries.
 #
 # A .mcpb is a ZIP of mcpb/manifest.json plus a server/ dir holding the
 # per-platform binaries. The manifest declares server.type "binary" and selects
-# server/ytdl-mcp on linux and server/ytdl-mcp.exe on win32 via platform_overrides,
+# server/ytdl-rmcp on linux and server/ytdl-rmcp.exe on win32 via platform_overrides,
 # so both binaries must be staged for the bundle to work on both platforms.
 #
 # Inputs (override via env):
-#   LINUX_BIN    path to the linux x86_64 binary   (default target/release/ytdl-mcp)
-#   WINDOWS_BIN  path to the windows x86_64 .exe    (default target/x86_64-pc-windows-msvc/release/ytdl-mcp.exe)
-#   OUT          output bundle path                 (default ytdl-mcp.mcpb)
+#   LINUX_BIN    path to the linux x86_64 binary   (default target/release/ytdl-rmcp)
+#   WINDOWS_BIN  path to the windows x86_64 .exe    (default target/x86_64-pc-windows-msvc/release/ytdl-rmcp.exe)
+#   OUT          output bundle path                 (default ytdl-rmcp.mcpb)
 #   DXT_OUT      legacy .dxt alias path             (default derived from OUT)
 set -euo pipefail
 
@@ -22,9 +22,9 @@ fail() {
   exit 1
 }
 
-LINUX_BIN="${LINUX_BIN:-target/release/ytdl-mcp}"
-WINDOWS_BIN="${WINDOWS_BIN:-target/x86_64-pc-windows-msvc/release/ytdl-mcp.exe}"
-OUT="${OUT:-ytdl-mcp.mcpb}"
+LINUX_BIN="${LINUX_BIN:-target/release/ytdl-rmcp}"
+WINDOWS_BIN="${WINDOWS_BIN:-target/x86_64-pc-windows-msvc/release/ytdl-rmcp.exe}"
+OUT="${OUT:-ytdl-rmcp.mcpb}"
 DXT_OUT="${DXT_OUT:-${OUT%.mcpb}.dxt}"
 MANIFEST="mcpb/manifest.json"
 
@@ -37,9 +37,9 @@ trap 'rm -rf "$build_dir"' EXIT
 
 mkdir -p "$build_dir/server"
 cp "$MANIFEST" "$build_dir/manifest.json"
-cp "$LINUX_BIN" "$build_dir/server/ytdl-mcp"
-cp "$WINDOWS_BIN" "$build_dir/server/ytdl-mcp.exe"
-chmod +x "$build_dir/server/ytdl-mcp"
+cp "$LINUX_BIN" "$build_dir/server/ytdl-rmcp"
+cp "$WINDOWS_BIN" "$build_dir/server/ytdl-rmcp.exe"
+chmod +x "$build_dir/server/ytdl-rmcp"
 log "staged manifest + linux/windows binaries"
 
 # The mcpb CLI validates the manifest against the official schema, then zips.

@@ -63,11 +63,11 @@
   ],
   "packages": {
     ".": {
-      "package-name": "ytdl-mcp",
-      "component": "ytdl-mcp",
+      "package-name": "ytdl-rmcp",
+      "component": "ytdl-rmcp",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        "packages/ytdl-mcp/package.json"
+        "packages/ytdl-rmcp/package.json"
       ]
     }
   }

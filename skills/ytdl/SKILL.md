@@ -9,7 +9,7 @@ Download media from any [yt-dlp](https://github.com/yt-dlp/yt-dlp)-supported sit
 audio, video, or both, embed proper metadata + cover art, and transfer the result
 to an SSH remote configured when the plugin was enabled.
 
-Six MCP tools are provided by the bundled `ytdl-mcp` server:
+Six MCP tools are provided by the bundled `ytdl-rmcp` server:
 
 | Tool | Purpose |
 | --- | --- |

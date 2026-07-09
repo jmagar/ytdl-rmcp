@@ -1,5 +1,5 @@
 {
-  "name": "ytdl-mcp",
+  "name": "ytdl-rmcp",
   "description": "Download audio/video with yt-dlp (Rust binary), embed metadata + cover art, organize by artist, and transfer to an SSH remote with rsync or scp.",
   "author": {
     "name": "Jacob Magar"
@@ -53,7 +53,7 @@
     "archive_dir": {
       "type": "directory",
       "title": "Download archive dir",
-      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-mcp.",
+      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-rmcp.",
       "required": false
     },
     "history_path": {

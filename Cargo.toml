@@ -1,15 +1,15 @@
 [package]
-name = "ytdl-mcp"
+name = "ytdl-rmcp"
 version = "0.7.0"
 edition = "2021"
 description = "Cross-platform MCP server that downloads media with yt-dlp, tags it, and rsyncs it to an SSH remote."
 license = "MIT"
-repository = "https://github.com/jmagar/ytdl-mcp"
-default-run = "ytdl-mcp"
+repository = "https://github.com/jmagar/ytdl-rmcp"
+default-run = "rytdl"
 build = "build.rs"
 
 [[bin]]
-name = "ytdl-mcp"
+name = "rytdl"
 path = "src/main.rs"
 
 [dependencies]

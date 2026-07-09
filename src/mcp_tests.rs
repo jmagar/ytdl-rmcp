@@ -118,7 +118,7 @@ fn get_info_enables_tools_and_resources() {
         info.capabilities.resources.is_some(),
         "server must advertise resource capability (search-UI app resource)"
     );
-    assert_eq!(info.server_info.name, "ytdl-mcp");
+    assert_eq!(info.server_info.name, "ytdl-rmcp");
 }
 
 #[test]

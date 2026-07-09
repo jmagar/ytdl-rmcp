@@ -1,19 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO="${YTDL_MCP_REPO:-jmagar/ytdl-mcp}"
+REPO="${YTDL_RMCP_REPO:-jmagar/ytdl-rmcp}"
 INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
-VERSION="${YTDL_MCP_VERSION:-latest}"
-BINARY_NAME="ytdl-mcp"
+VERSION="${YTDL_RMCP_VERSION:-latest}"
+BINARY_NAME="rytdl"
 
 usage() {
   cat <<'USAGE'
-Install ytdl-mcp from GitHub Releases.
+Install rytdl from GitHub Releases.
 
 Environment:
   INSTALL_DIR       Destination directory (default: ~/.local/bin)
-  YTDL_MCP_VERSION Release tag such as v0.7.0 (default: latest)
-  YTDL_MCP_REPO    GitHub repo owner/name (default: jmagar/ytdl-mcp)
+  YTDL_RMCP_VERSION Release tag such as v0.7.0 (default: latest)
+  YTDL_RMCP_REPO    GitHub repo owner/name (default: jmagar/ytdl-rmcp)
 USAGE
 }
 

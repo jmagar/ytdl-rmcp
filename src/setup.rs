@@ -1,4 +1,4 @@
-//! `ytdl-mcp setup` — interactive installer.
+//! `ytdl-rmcp setup` — interactive installer.
 //!
 //! 1. Ensure yt-dlp + ffmpeg are installed (into the cache dir).
 //! 2. Prompt for the SSH remote + audio/video destinations.
@@ -14,7 +14,7 @@ use dialoguer::{theme::ColorfulTheme, Input, MultiSelect};
 use crate::bootstrap;
 use crate::config::Config;
 
-const SERVER_NAME: &str = "ytdl-mcp";
+const SERVER_NAME: &str = "ytdl-rmcp";
 
 /// One agent CLI and how it registers a stdio MCP server.
 struct Agent {
@@ -40,7 +40,7 @@ const AGENTS: &[Agent] = &[
 ];
 
 pub async fn run() -> Result<()> {
-    eprintln!("ytdl-mcp setup\n");
+    eprintln!("ytdl-rmcp setup\n");
 
     // 1. Install/verify yt-dlp + ffmpeg.
     eprintln!("Checking yt-dlp + ffmpeg…");
@@ -85,7 +85,7 @@ pub async fn run() -> Result<()> {
         .collect();
     let defaults: Vec<bool> = vec![true; available.len()];
     let chosen = MultiSelect::with_theme(&theme)
-        .with_prompt("Install ytdl-mcp into which agents? (space to toggle, enter to confirm)")
+        .with_prompt("Install ytdl-rmcp into which agents? (space to toggle, enter to confirm)")
         .items(&labels)
         .defaults(&defaults)
         .interact()?;

@@ -74,7 +74,7 @@ if [ -n "$unused_plugin_keys" ]; then
 fi
 log "Claude userConfig mapping ok"
 
-jq -r '.mcpServers."ytdl-mcp".env | keys[]' .mcp.json | sort -u > "$tmp_dir/mcp_env_vars"
+jq -r '.mcpServers."ytdl-rmcp".env | keys[]' .mcp.json | sort -u > "$tmp_dir/mcp_env_vars"
 jq -e '
   (.settings | type == "array")
   and all(.settings[];
@@ -162,11 +162,11 @@ release_workflow=".github/workflows/release.yml"
 [ -f "$release_workflow" ] || fail "missing $release_workflow"
 grep -q 'types: \[published\]' "$release_workflow" \
   || fail "release workflow must run when release-please publishes a GitHub Release"
-grep -q 'ytdl-mcp-x86_64.tar.gz' "$release_workflow" \
+grep -q 'ytdl-rmcp-x86_64.tar.gz' "$release_workflow" \
   || fail "release workflow must publish the linux npm installer tarball"
-grep -q 'ytdl-mcp-windows-x86_64.tar.gz' "$release_workflow" \
+grep -q 'ytdl-rmcp-windows-x86_64.tar.gz' "$release_workflow" \
   || fail "release workflow must publish the windows npm installer tarball"
-grep -q 'npm publish --provenance --access public ./packages/ytdl-mcp' "$release_workflow" \
+grep -q 'npm publish --provenance --access public ./packages/ytdl-rmcp' "$release_workflow" \
   || fail "release workflow must publish the npm launcher with provenance"
 release_tag_expression="$(printf '%s%s' '$' '{{ needs.release-meta.outputs.tag_name }}')"
 grep -Fq "tag_name: $release_tag_expression" "$release_workflow" \

@@ -10,7 +10,7 @@ fn sample_envs() -> Vec<(String, String)> {
 #[test]
 fn claude_places_env_flags_before_separator_and_cmd_after() {
     let envs = sample_envs();
-    let args = build_mcp_add_args("claude", "ytdl-mcp", "/usr/bin/ytdl-mcp", &envs);
+    let args = build_mcp_add_args("claude", "ytdl-rmcp", "/usr/bin/ytdl-rmcp", &envs);
     assert_eq!(
         args,
         vec![
@@ -18,13 +18,13 @@ fn claude_places_env_flags_before_separator_and_cmd_after() {
             "add",
             "-s",
             "user",
-            "ytdl-mcp",
+            "ytdl-rmcp",
             "-e",
             "YTDLP_REMOTE=nas",
             "-e",
             "YTDLP_REMOTE_PATH=/music",
             "--",
-            "/usr/bin/ytdl-mcp",
+            "/usr/bin/ytdl-rmcp",
         ]
     );
 
@@ -36,14 +36,14 @@ fn claude_places_env_flags_before_separator_and_cmd_after() {
         last_e < sep,
         "claude: -e flags must precede the -- separator"
     );
-    assert_eq!(args.last().unwrap(), "/usr/bin/ytdl-mcp");
-    assert_eq!(args[sep + 1], "/usr/bin/ytdl-mcp");
+    assert_eq!(args.last().unwrap(), "/usr/bin/ytdl-rmcp");
+    assert_eq!(args[sep + 1], "/usr/bin/ytdl-rmcp");
 }
 
 #[test]
 fn codex_uses_env_flag_before_name() {
     let envs = sample_envs();
-    let args = build_mcp_add_args("codex", "ytdl-mcp", "/usr/bin/ytdl-mcp", &envs);
+    let args = build_mcp_add_args("codex", "ytdl-rmcp", "/usr/bin/ytdl-rmcp", &envs);
     assert_eq!(
         args,
         vec![
@@ -53,9 +53,9 @@ fn codex_uses_env_flag_before_name() {
             "YTDLP_REMOTE=nas",
             "--env",
             "YTDLP_REMOTE_PATH=/music",
-            "ytdl-mcp",
+            "ytdl-rmcp",
             "--",
-            "/usr/bin/ytdl-mcp",
+            "/usr/bin/ytdl-rmcp",
         ]
     );
 
@@ -65,7 +65,7 @@ fn codex_uses_env_flag_before_name() {
         !args.iter().any(|a| a == "-e"),
         "codex must use --env, not -e"
     );
-    let name = args.iter().position(|a| a == "ytdl-mcp").unwrap();
+    let name = args.iter().position(|a| a == "ytdl-rmcp").unwrap();
     let last_env = args.iter().rposition(|a| a == "--env").unwrap();
     assert!(last_env < name, "codex: --env flags must precede the name");
 }
@@ -73,7 +73,7 @@ fn codex_uses_env_flag_before_name() {
 #[test]
 fn gemini_places_env_flags_after_name_and_cmd() {
     let envs = sample_envs();
-    let args = build_mcp_add_args("gemini", "ytdl-mcp", "/usr/bin/ytdl-mcp", &envs);
+    let args = build_mcp_add_args("gemini", "ytdl-rmcp", "/usr/bin/ytdl-rmcp", &envs);
     assert_eq!(
         args,
         vec![
@@ -81,8 +81,8 @@ fn gemini_places_env_flags_after_name_and_cmd() {
             "add",
             "-s",
             "user",
-            "ytdl-mcp",
-            "/usr/bin/ytdl-mcp",
+            "ytdl-rmcp",
+            "/usr/bin/ytdl-rmcp",
             "-e",
             "YTDLP_REMOTE=nas",
             "-e",
@@ -96,8 +96,8 @@ fn gemini_places_env_flags_after_name_and_cmd() {
         !args.iter().any(|a| a == "--"),
         "gemini uses no -- separator"
     );
-    let name = args.iter().position(|a| a == "ytdl-mcp").unwrap();
-    let cmd = args.iter().position(|a| a == "/usr/bin/ytdl-mcp").unwrap();
+    let name = args.iter().position(|a| a == "ytdl-rmcp").unwrap();
+    let cmd = args.iter().position(|a| a == "/usr/bin/ytdl-rmcp").unwrap();
     let first_e = args.iter().position(|a| a == "-e").unwrap();
     assert!(name < cmd, "gemini: name must precede command");
     assert!(
@@ -109,8 +109,8 @@ fn gemini_places_env_flags_after_name_and_cmd() {
 #[test]
 fn unknown_bin_falls_back_to_claude_shape() {
     let envs = sample_envs();
-    let claude = build_mcp_add_args("claude", "ytdl-mcp", "/bin/x", &envs);
-    let other = build_mcp_add_args("something-else", "ytdl-mcp", "/bin/x", &envs);
+    let claude = build_mcp_add_args("claude", "ytdl-rmcp", "/bin/x", &envs);
+    let other = build_mcp_add_args("something-else", "ytdl-rmcp", "/bin/x", &envs);
     assert_eq!(claude, other);
 }
 
@@ -118,15 +118,15 @@ fn unknown_bin_falls_back_to_claude_shape() {
 fn no_envs_produces_minimal_argv_per_cli() {
     let envs: Vec<(String, String)> = vec![];
     assert_eq!(
-        build_mcp_add_args("claude", "ytdl-mcp", "/bin/x", &envs),
-        vec!["mcp", "add", "-s", "user", "ytdl-mcp", "--", "/bin/x"]
+        build_mcp_add_args("claude", "ytdl-rmcp", "/bin/x", &envs),
+        vec!["mcp", "add", "-s", "user", "ytdl-rmcp", "--", "/bin/x"]
     );
     assert_eq!(
-        build_mcp_add_args("codex", "ytdl-mcp", "/bin/x", &envs),
-        vec!["mcp", "add", "ytdl-mcp", "--", "/bin/x"]
+        build_mcp_add_args("codex", "ytdl-rmcp", "/bin/x", &envs),
+        vec!["mcp", "add", "ytdl-rmcp", "--", "/bin/x"]
     );
     assert_eq!(
-        build_mcp_add_args("gemini", "ytdl-mcp", "/bin/x", &envs),
-        vec!["mcp", "add", "-s", "user", "ytdl-mcp", "/bin/x"]
+        build_mcp_add_args("gemini", "ytdl-rmcp", "/bin/x", &envs),
+        vec!["mcp", "add", "-s", "user", "ytdl-rmcp", "/bin/x"]
     );
 }

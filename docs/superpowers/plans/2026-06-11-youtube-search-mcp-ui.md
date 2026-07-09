@@ -572,7 +572,7 @@ Expected: success.
 Run:
 
 ```bash
-cargo run --quiet -- --help >/tmp/ytdl-mcp-help.txt
+cargo run --quiet -- --help >/tmp/ytdl-rmcp-help.txt
 yt-dlp --dump-single-json --skip-download --no-warnings --quiet "ytsearch1:slow pulp live" | jq '.entries | length'
 ```
 
@@ -603,7 +603,7 @@ use rmcp::model::ResourceContents;
 
 #[test]
 fn app_resource_uri_is_stable() {
-    assert_eq!(super::RESOURCE_URI, "ui://ytdl-mcp/youtube-search.html");
+    assert_eq!(super::RESOURCE_URI, "ui://ytdl-rmcp/youtube-search.html");
 }
 
 #[test]
@@ -827,14 +827,14 @@ use rmcp::model::{
 };
 use serde_json::json;
 
-pub const RESOURCE_URI: &str = "ui://ytdl-mcp/youtube-search.html";
+pub const RESOURCE_URI: &str = "ui://ytdl-rmcp/youtube-search.html";
 const HTML: &str = include_str!("../assets/youtube-search-app.html");
 
 pub fn list_app_resources() -> ListResourcesResult {
     ListResourcesResult {
         resources: vec![RawResource::new(RESOURCE_URI, "youtube-search")
             .with_title("YouTube search")
-            .with_description("Search YouTube and send results to ytdl-mcp actions.")
+            .with_description("Search YouTube and send results to ytdl-rmcp actions.")
             .with_mime_type("text/html")
             .no_annotation()],
         next_cursor: None,
@@ -989,7 +989,7 @@ ServerInfo::new(
         .enable_resources()
         .build(),
 )
-.with_server_info(Implementation::new("ytdl-mcp", env!("CARGO_PKG_VERSION")))
+.with_server_info(Implementation::new("ytdl-rmcp", env!("CARGO_PKG_VERSION")))
 ```
 
 - [ ] **Step 5: Run compile check**
@@ -1213,7 +1213,7 @@ Run the built binary through an MCP client such as `mcporter` if available. If u
 
 ```bash
 cargo build
-{ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.0"}}}'; sleep 1; printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'; printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"youtube_search","arguments":{"query":"slow pulp live","limit":1,"response_format":"json"}}}'; sleep 8; } | ./target/debug/ytdl-mcp
+{ printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0.0.0"}}}'; sleep 1; printf '%s\n' '{"jsonrpc":"2.0","method":"notifications/initialized"}'; printf '%s\n' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"youtube_search","arguments":{"query":"slow pulp live","limit":1,"response_format":"json"}}}'; sleep 8; } | ./target/debug/ytdl-rmcp
 ```
 
 Expected: response for id `2` contains `youtube_search` result JSON with at least one URL.
@@ -1224,10 +1224,10 @@ Use the same MCP client to call:
 
 ```json
 {"jsonrpc":"2.0","id":3,"method":"resources/list","params":{}}
-{"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":"ui://ytdl-mcp/youtube-search.html"}}
+{"jsonrpc":"2.0","id":4,"method":"resources/read","params":{"uri":"ui://ytdl-rmcp/youtube-search.html"}}
 ```
 
-Expected: resource list includes `ui://ytdl-mcp/youtube-search.html`; resource read returns `text/html` containing `YouTube search`.
+Expected: resource list includes `ui://ytdl-rmcp/youtube-search.html`; resource read returns `text/html` containing `YouTube search`.
 
 - [ ] **Step 7: Final status**
 

@@ -193,7 +193,7 @@ fn resolve_no_download_would_bootstrap_when_nothing_present() {
     let resolved = resolve_no_download(
         None,
         "YTDLP_PATH",
-        "ytdl-mcp-definitely-not-a-real-binary-xyz",
+        "ytdl-rmcp-definitely-not-a-real-binary-xyz",
     )
     .unwrap();
 

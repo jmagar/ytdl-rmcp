@@ -110,7 +110,7 @@ impl Config {
     /// production startup. Production code paths must use `from_env_result`.
     #[cfg(test)]
     pub fn from_env() -> Self {
-        Self::from_env_result().expect("invalid ytdl-mcp environment configuration")
+        Self::from_env_result().expect("invalid ytdl-rmcp environment configuration")
     }
 
     /// Full ssh option list: forced defaults followed by any user extras.

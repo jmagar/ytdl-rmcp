@@ -9,15 +9,15 @@ function packageVersion() {
 function targetFor(platform = process.platform, arch = process.arch) {
   if (platform === "linux" && arch === "x64") {
     return {
-      asset: "ytdl-mcp-x86_64.tar.gz",
-      binary: "ytdl-mcp",
+      asset: "rytdl-x86_64.tar.gz",
+      binary: "rytdl",
     };
   }
 
   if (platform === "win32" && arch === "x64") {
     return {
-      asset: "ytdl-mcp-windows-x86_64.tar.gz",
-      binary: "ytdl-mcp.exe",
+      asset: "rytdl-windows-x86_64.tar.gz",
+      binary: "rytdl.exe",
     };
   }
 
@@ -25,12 +25,12 @@ function targetFor(platform = process.platform, arch = process.arch) {
 }
 
 function releaseVersion(env = process.env) {
-  const raw = env.YTDL_MCP_BINARY_VERSION || packageVersion();
+  const raw = env.YTDL_RMCP_BINARY_VERSION || packageVersion();
   return raw.startsWith("v") ? raw : `v${raw}`;
 }
 
 function releaseBaseUrl(env = process.env) {
-  return env.YTDL_MCP_RELEASE_BASE_URL || "https://github.com/jmagar/ytdl-mcp/releases/download";
+  return env.YTDL_RMCP_RELEASE_BASE_URL || "https://github.com/jmagar/ytdl-rmcp/releases/download";
 }
 
 function downloadUrl(target, env = process.env) {

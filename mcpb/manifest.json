@@ -1,16 +1,16 @@
 {
   "manifest_version": "0.3",
-  "name": "ytdl-mcp",
+  "name": "ytdl-rmcp",
   "display_name": "yt-dlp Downloader",
   "version": "0.7.0",
   "description": "Download audio/video from any yt-dlp-supported site, tag it, and transfer it to an SSH remote with rsync or scp.",
-  "long_description": "Cross-platform single-binary MCP server. Downloads media with yt-dlp, embeds metadata and cover art, organizes by artist, and rsync/scp's the result to an SSH remote. yt-dlp and ffmpeg are auto-downloaded into a per-user cache on first run, so the bundle only ships the ytdl-mcp binary itself.",
+  "long_description": "Cross-platform single-binary MCP server. Downloads media with yt-dlp, embeds metadata and cover art, organizes by artist, and rsync/scp's the result to an SSH remote. yt-dlp and ffmpeg are auto-downloaded into a per-user cache on first run, so the bundle only ships the ytdl-rmcp binary itself.",
   "author": {
     "name": "Jacob Magar"
   },
-  "homepage": "https://github.com/jmagar/ytdl-mcp",
-  "documentation": "https://github.com/jmagar/ytdl-mcp/blob/main/README.md",
-  "support": "https://github.com/jmagar/ytdl-mcp/issues",
+  "homepage": "https://github.com/jmagar/ytdl-rmcp",
+  "documentation": "https://github.com/jmagar/ytdl-rmcp/blob/main/README.md",
+  "support": "https://github.com/jmagar/ytdl-rmcp/issues",
   "license": "MIT",
   "keywords": [
     "yt-dlp",
@@ -22,9 +22,9 @@
   ],
   "server": {
     "type": "binary",
-    "entry_point": "server/ytdl-mcp",
+    "entry_point": "server/ytdl-rmcp",
     "mcp_config": {
-      "command": "${__dirname}/server/ytdl-mcp",
+      "command": "${__dirname}/server/ytdl-rmcp",
       "args": ["serve"],
       "env": {
         "YTDLP_REMOTE": "${user_config.remote}",
@@ -55,7 +55,7 @@
       },
       "platform_overrides": {
         "win32": {
-          "command": "${__dirname}/server/ytdl-mcp.exe"
+          "command": "${__dirname}/server/ytdl-rmcp.exe"
         }
       }
     }
@@ -75,7 +75,7 @@
     },
     {
       "name": "youtube_stats",
-      "description": "Summarize ytdl-mcp download history, totals, file kinds, uploaders, and recent entries."
+      "description": "Summarize ytdl-rmcp download history, totals, file kinds, uploaders, and recent entries."
     },
     {
       "name": "youtube_search_ui",
@@ -122,7 +122,7 @@
     "archive_dir": {
       "type": "directory",
       "title": "Download archive dir",
-      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-mcp.",
+      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-rmcp.",
       "default": ""
     },
     "history_path": {

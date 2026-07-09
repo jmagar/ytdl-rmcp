@@ -1,6 +1,6 @@
 # Container Runtime
 
-The container image packages `ytdl-mcp` with the host tools needed for download,
+The container image packages `ytdl-rmcp` with the host tools needed for download,
 fingerprinting, tagging, and SSH transfer workflows:
 
 - `ffmpeg`
@@ -14,7 +14,7 @@ The server still runs MCP over stdio by default.
 ## Build
 
 ```bash
-docker build -t ytdl-mcp:local .
+docker build -t ytdl-rmcp:local .
 ```
 
 ## Published Image
@@ -22,14 +22,14 @@ docker build -t ytdl-mcp:local .
 Every push to `main` publishes:
 
 ```text
-ghcr.io/jmagar/ytdl-mcp:main
-ghcr.io/jmagar/ytdl-mcp:main-<git-sha>
+ghcr.io/jmagar/ytdl-rmcp:main
+ghcr.io/jmagar/ytdl-rmcp:main-<git-sha>
 ```
 
 Pull the latest `main` image with:
 
 ```bash
-docker pull ghcr.io/jmagar/ytdl-mcp:main
+docker pull ghcr.io/jmagar/ytdl-rmcp:main
 ```
 
 ## Run As An MCP Server
@@ -42,15 +42,15 @@ survive container restarts.
 docker run --rm -i \
   -e YTDLP_REMOTE=tootie \
   -e YTDLP_REMOTE_PATH=/mnt/user/data/media/music/yt-dlp \
-  -e YTDLP_HISTORY_PATH=/home/ytdl/.local/state/ytdl-mcp/downloads.jsonl \
+  -e YTDLP_HISTORY_PATH=/home/ytdl/.local/state/ytdl-rmcp/downloads.jsonl \
   -v "$HOME/.ssh:/home/ytdl/.ssh:ro" \
-  -v ytdl-mcp-state:/home/ytdl/.local/state/ytdl-mcp \
-  -v ytdl-mcp-cache:/home/ytdl/.cache \
-  ghcr.io/jmagar/ytdl-mcp:main serve
+  -v ytdl-rmcp-state:/home/ytdl/.local/state/ytdl-rmcp \
+  -v ytdl-rmcp-cache:/home/ytdl/.cache \
+  ghcr.io/jmagar/ytdl-rmcp:main serve
 ```
 
 For MCP clients that expect a command, use
-`docker run --rm -i ... ghcr.io/jmagar/ytdl-mcp:main serve` as the command.
+`docker run --rm -i ... ghcr.io/jmagar/ytdl-rmcp:main serve` as the command.
 
 ## Identify A Mounted Library
 
@@ -62,7 +62,7 @@ docker run --rm -i \
   -e YTDLP_ACOUSTID_CLIENT_KEY="$YTDLP_ACOUSTID_CLIENT_KEY" \
   -e YTDLP_MUSICBRAINZ_CONTACT="you@example.com" \
   -v /mnt/user/data/media/music/yt-dlp:/library \
-  ghcr.io/jmagar/ytdl-mcp:main serve
+  ghcr.io/jmagar/ytdl-rmcp:main serve
 ```
 
 Then call:

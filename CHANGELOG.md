@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ytdl-mcp doctor` subcommand: a read-only diagnostic report (version, git SHA,
+- `ytdl-rmcp doctor` subcommand: a read-only diagnostic report (version, git SHA,
   platform, resolved tool paths, and redacted config presence) for triaging a
   broken install.
 - Embed the build's git SHA in `server_info`.
@@ -72,5 +72,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   organization, YouTube mix/radio URL cleaning, and a `setup` installer that
   registers the server into Claude Code, Codex, and Gemini CLI.
 
-[Unreleased]: https://github.com/jmagar/ytdl-mcp/compare/v0.7.0...HEAD
-[0.7.0]: https://github.com/jmagar/ytdl-mcp/releases/tag/v0.7.0
+[Unreleased]: https://github.com/jmagar/ytdl-rmcp/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/jmagar/ytdl-rmcp/releases/tag/v0.7.0

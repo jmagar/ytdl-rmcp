@@ -2,6 +2,7 @@
 "use strict";
 
 const fs = require("node:fs");
+const http = require("node:http");
 const https = require("node:https");
 const os = require("node:os");
 const path = require("node:path");
@@ -15,12 +16,13 @@ const {
 } = require("../lib/platform");
 
 function log(message) {
-  process.stderr.write(`ytdl-mcp: ${message}\n`);
+  process.stderr.write(`ytdl-rmcp: ${message}\n`);
 }
 
 function download(url, destination) {
   return new Promise((resolve, reject) => {
-    const request = https.get(url, (response) => {
+    const client = url.startsWith("http:") ? http : https;
+    const request = client.get(url, (response) => {
       if ([301, 302, 303, 307, 308].includes(response.statusCode)) {
         response.resume();
         download(response.headers.location, destination).then(resolve, reject);
@@ -57,8 +59,8 @@ function extract(archive, destination) {
 }
 
 async function main() {
-  if (process.env.YTDL_MCP_SKIP_DOWNLOAD === "1") {
-    log("skipping binary download because YTDL_MCP_SKIP_DOWNLOAD=1");
+  if (process.env.YTDL_RMCP_SKIP_DOWNLOAD === "1") {
+    log("skipping binary download because YTDL_RMCP_SKIP_DOWNLOAD=1");
     return;
   }
 
@@ -70,7 +72,7 @@ async function main() {
     return;
   }
 
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ytdl-mcp-install-"));
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "ytdl-rmcp-install-"));
   const archive = path.join(tempDir, target.asset);
 
   try {
