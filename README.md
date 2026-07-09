@@ -1,5 +1,9 @@
 # ytdl-mcp
 
+[![npm version](https://img.shields.io/npm/v/ytdl-mcp.svg)](https://www.npmjs.com/package/ytdl-mcp)
+[![release](https://github.com/jmagar/ytdl-mcp/actions/workflows/release.yml/badge.svg)](https://github.com/jmagar/ytdl-mcp/actions/workflows/release.yml)
+[![CI](https://github.com/jmagar/ytdl-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/jmagar/ytdl-mcp/actions/workflows/ci.yml)
+
 A cross-platform, single-binary **MCP server** that downloads media from any
 [yt-dlp](https://github.com/yt-dlp/yt-dlp)-supported site (YouTube, Vimeo, …),
 embeds metadata and cover art, organizes files by artist, and transfers the
@@ -215,7 +219,8 @@ place of `npx -y ytdl-mcp`.
 
 - **npm launcher** — `npx -y ytdl-mcp` downloads and runs the matching
   GitHub Release binary. Run without subcommands, it serves MCP over stdio;
-  `npx -y ytdl-mcp setup` runs the guided installer.
+  `npx -y ytdl-mcp setup` runs the guided installer. Stable releases publish
+  the package from GitHub Actions with npm provenance.
 - **Claude Code plugin** — `.claude-plugin/plugin.json` prompts for config via
   `userConfig`; `.mcp.json` launches `npx -y ytdl-mcp`, which downloads the
   matching GitHub Release binary through npm.

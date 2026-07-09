@@ -240,6 +240,14 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --provenance --access public ./packages/ytdl-mcp
 
+      - name: Smoke published npm launcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          cache="$(mktemp -d)"
+          trap 'rm -rf "$cache"' EXIT
+          npm_config_cache="$cache" npx -y "ytdl-mcp@${{ steps.npm-version.outputs.version }}" --version
+
   test:
     runs-on: ubuntu-latest
     steps:
