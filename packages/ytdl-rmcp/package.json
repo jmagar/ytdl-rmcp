@@ -1,6 +1,6 @@
 {
   "name": "ytdl-rmcp",
-  "version": "0.7.2",
+  "version": "0.7.3",
   "description": "Node launcher for the ytdl-rmcp Rust MCP server and CLI binary.",
   "license": "MIT",
   "repository": {

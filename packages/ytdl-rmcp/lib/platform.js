@@ -9,14 +9,14 @@ function packageVersion() {
 function targetFor(platform = process.platform, arch = process.arch) {
   if (platform === "linux" && arch === "x64") {
     return {
-      asset: "rytdl-x86_64.tar.gz",
+      asset: "ytdl-rmcp-x86_64.tar.gz",
       binary: "rytdl",
     };
   }
 
   if (platform === "win32" && arch === "x64") {
     return {
-      asset: "rytdl-windows-x86_64.tar.gz",
+      asset: "ytdl-rmcp-windows-x86_64.tar.gz",
       binary: "rytdl.exe",
     };
   }

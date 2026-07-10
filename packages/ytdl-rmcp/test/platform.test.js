@@ -11,11 +11,11 @@ const { version: packageVersion } = require("../package.json");
 
 test("maps supported platforms to release assets", () => {
   assert.deepEqual(targetFor("linux", "x64"), {
-    asset: "rytdl-x86_64.tar.gz",
+    asset: "ytdl-rmcp-x86_64.tar.gz",
     binary: "rytdl",
   });
   assert.deepEqual(targetFor("win32", "x64"), {
-    asset: "rytdl-windows-x86_64.tar.gz",
+    asset: "ytdl-rmcp-windows-x86_64.tar.gz",
     binary: "rytdl.exe",
   });
 });
@@ -35,6 +35,6 @@ test("allows release tag override", () => {
   };
   assert.equal(
     downloadUrl(targetFor("linux", "x64"), env),
-    "https://example.test/releases/v9.9.9/rytdl-x86_64.tar.gz",
+    "https://example.test/releases/v9.9.9/ytdl-rmcp-x86_64.tar.gz",
   );
 });
