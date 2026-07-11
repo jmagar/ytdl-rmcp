@@ -5,6 +5,10 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 5
+  groups:
+    cargo-dependencies:
+      patterns:
+      - "*"
   commit-message:
     prefix: deps
     prefix-development: deps
@@ -14,6 +18,10 @@ updates:
   schedule:
     interval: weekly
   open-pull-requests-limit: 5
+  groups:
+    github-actions:
+      patterns:
+      - "*"
   commit-message:
     prefix: deps
     prefix-development: deps
