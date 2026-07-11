@@ -1,6 +1,4 @@
-use rmcp::model::{
-    AnnotateAble, ListResourcesResult, Meta, RawResource, ReadResourceResult, ResourceContents,
-};
+use rmcp::model::{ListResourcesResult, Meta, ReadResourceResult, Resource, ResourceContents};
 use serde_json::json;
 
 pub const RESOURCE_URI: &str = "ui://ytdl-rmcp/youtube-search.html";
@@ -12,11 +10,10 @@ const UI_META_KEY: &str = "ui";
 
 pub fn list_app_resources() -> ListResourcesResult {
     ListResourcesResult {
-        resources: vec![RawResource::new(RESOURCE_URI, "youtube-search")
+        resources: vec![Resource::new(RESOURCE_URI, "youtube-search")
             .with_title("YouTube search")
             .with_description("Search YouTube and send results to ytdl-rmcp actions.")
-            .with_mime_type(RESOURCE_MIME_TYPE)
-            .no_annotation()],
+            .with_mime_type(RESOURCE_MIME_TYPE)],
         next_cursor: None,
         meta: None,
     }

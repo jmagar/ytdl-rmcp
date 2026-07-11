@@ -5,7 +5,7 @@ use std::sync::Arc;
 use rmcp::handler::server::router::tool::ToolRouter;
 use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::{
-    CallToolResult, Content, Implementation, ListResourcesResult, PaginatedRequestParams,
+    CallToolResult, ContentBlock, Implementation, ListResourcesResult, PaginatedRequestParams,
     ReadResourceRequestParams, ReadResourceResult, ServerCapabilities, ServerInfo,
 };
 use rmcp::{tool, tool_handler, tool_router, ErrorData, RoleServer, ServerHandler};
@@ -18,7 +18,7 @@ use crate::service;
 /// Build a uniform error result: `CallToolResult::error` with the `"Error: {e}"`
 /// content shape. All success/error helpers funnel their error path through this.
 fn error_tool_result(error: impl std::fmt::Display) -> CallToolResult {
-    CallToolResult::error(vec![Content::text(format!("Error: {error}"))])
+    CallToolResult::error(vec![ContentBlock::text(format!("Error: {error}"))])
 }
 
 /// Wrap a fallible text-producing operation in the shared tool-result contract:
@@ -27,7 +27,7 @@ fn text_tool_result<E: std::fmt::Display>(
     result: std::result::Result<String, E>,
 ) -> CallToolResult {
     match result {
-        Ok(text) => CallToolResult::success(vec![Content::text(text)]),
+        Ok(text) => CallToolResult::success(vec![ContentBlock::text(text)]),
         Err(e) => error_tool_result(e),
     }
 }
@@ -47,7 +47,7 @@ where
     match result {
         Ok(payload) => {
             let text = serde_json::to_string_pretty(&payload).unwrap_or_else(|_| "{}".into());
-            let mut result = CallToolResult::success(vec![Content::text(text)]);
+            let mut result = CallToolResult::success(vec![ContentBlock::text(text)]);
             result.structured_content = Some(serde_json::to_value(&payload).unwrap_or_default());
             result.meta = Some(meta);
             result

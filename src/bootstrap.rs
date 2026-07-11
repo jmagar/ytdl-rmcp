@@ -72,7 +72,11 @@ pub(crate) fn resolve_override_or_path(
 
 pub(crate) fn verify_sha256(path: &Path, expected: &str, label: &str) -> Result<()> {
     let bytes = std::fs::read(path).with_context(|| format!("read {}", path.display()))?;
-    let actual = format!("{:x}", Sha256::digest(&bytes));
+    let digest = Sha256::digest(&bytes);
+    let actual = digest
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect::<String>();
     if actual != expected {
         bail!(
             "{label} checksum mismatch for {}: expected {expected}, got {actual}",

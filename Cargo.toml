@@ -14,7 +14,7 @@ path = "src/main.rs"
 
 [dependencies]
 # MCP server (stdio transport)
-rmcp = { version = "1.7", default-features = false, features = [
+rmcp = { version = "2.2", default-features = false, features = [
   "server",
   "macros",
   "transport-io",
@@ -48,19 +48,19 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Locate external executables (yt-dlp, ffmpeg, rsync, scp, ssh)
-which = "7"
+which = "8"
 
 # URL parsing for mix/radio cleaning
 url = "2"
 
 # Staging dirs + per-user cache/state dirs
 tempfile = "3"
-directories = "5"
+directories = "6"
 ureq = { version = "3.3.0", default-features = false, features = ["rustls"] }
 ffmpeg-sidecar = "2.5.2"
 fs2 = "0.4.3"
 dialoguer = { version = "0.12.0", default-features = false }
-sha2 = "0.10"
+sha2 = "0.11"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 lofty = "0.24.0"
 
