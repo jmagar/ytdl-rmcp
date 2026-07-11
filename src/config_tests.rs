@@ -254,6 +254,21 @@ fn from_env_result_wires_runtime_env_values() {
 }
 
 #[test]
+fn from_env_result_composes_legacy_ssh_targets_explicitly() {
+    let _guard = env_lock();
+    clear_test_env();
+    std::env::set_var("YTDLP_REMOTE", "nas");
+    std::env::set_var("YTDLP_REMOTE_PATH", "/music");
+    std::env::set_var("YTDLP_VIDEO_REMOTE_PATH", "/videos");
+
+    let cfg = Config::from_env_result().unwrap();
+
+    assert_eq!(cfg.target_path.as_deref(), Some("ssh:nas:/music"));
+    assert_eq!(cfg.video_target_path.as_deref(), Some("ssh:nas:/videos"));
+    clear_test_env();
+}
+
+#[test]
 fn from_env_strips_dangerous_ssh_opts_end_to_end() {
     let _guard = env_lock();
     clear_test_env();
@@ -299,6 +314,10 @@ fn clear_test_env() {
     for key in [
         "YTDLP_TARGET_PATH",
         "YTDLP_VIDEO_TARGET_PATH",
+        "YTDLP_ALLOW_LOCAL_TARGETS",
+        "YTDLP_REMOTE",
+        "YTDLP_REMOTE_PATH",
+        "YTDLP_VIDEO_REMOTE_PATH",
         "YTDLP_AUDIO_FORMAT",
         "YTDLP_SSH_OPTS",
         "YTDLP_HISTORY_PATH",

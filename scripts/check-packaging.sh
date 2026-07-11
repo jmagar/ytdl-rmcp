@@ -200,7 +200,7 @@ mcpb_mcp_semantic_drift="$(
     | to_entries[]
     | [
         .key,
-        (if (.key == "max_age_days" or .key == "plex_playlist") then "__ALLOW_SURFACE_DEFAULT__" else (.value.default // "__MISSING__") end),
+        (if .key == "plex_playlist" then "__ALLOW_SURFACE_DEFAULT__" else (.value.default // "__MISSING__") end),
         (.value.description // "__MISSING__")
       ]
     | @tsv
@@ -210,7 +210,7 @@ mcpb_mcp_semantic_drift="$(
     | to_entries[]
     | [
         .key,
-        (if (.key == "max_age_days" or .key == "plex_playlist") then "__ALLOW_SURFACE_DEFAULT__" else (.value.default // "__MISSING__") end),
+        (if .key == "plex_playlist" then "__ALLOW_SURFACE_DEFAULT__" else (.value.default // "__MISSING__") end),
         (.value.description // "__MISSING__")
       ]
     | @tsv

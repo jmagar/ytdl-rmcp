@@ -38,6 +38,32 @@ fn download_payload_marks_files_with_error_as_partial() {
 }
 
 #[test]
+fn download_payload_does_not_classify_explicit_rclone_as_legacy_ssh() {
+    let results = vec![ItemResult {
+        url: "https://example.test/watch".into(),
+        title: Some("Song".into()),
+        files: vec![media_file("audio", "Song [abc].mp3")],
+        ..Default::default()
+    }];
+
+    let payload = download_payload(
+        &results,
+        &[("audio", "rclone:gdrive:/Music/ytdl")],
+        true,
+        None,
+        None,
+    );
+
+    assert_eq!(payload["remote"], serde_json::Value::Null);
+    assert_eq!(payload["dest_path"], "rclone:gdrive:/Music/ytdl");
+    assert_eq!(payload["target_path"], "rclone:gdrive:/Music/ytdl");
+    assert_eq!(
+        payload["destinations"][0]["dest_path"],
+        "rclone:gdrive:/Music/ytdl"
+    );
+}
+
+#[test]
 fn markdown_reports_partial_item_without_hiding_files() {
     let payload = json!({
         "transferred": true,

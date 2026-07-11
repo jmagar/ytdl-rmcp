@@ -140,7 +140,7 @@ impl Config {
 fn legacy_target_path(path_env: &str) -> Option<String> {
     let remote = non_empty("YTDLP_REMOTE")?;
     let path = non_empty(path_env)?;
-    Some(format!("{remote}:{path}"))
+    Some(format!("ssh:{remote}:{path}"))
 }
 
 pub(crate) fn normalize_sha256_pin(value: &str) -> Option<String> {

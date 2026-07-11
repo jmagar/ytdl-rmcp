@@ -26,6 +26,24 @@
       "description": "Destination for video downloads. Same forms as target path. Falls back to the target path if blank.",
       "required": false
     },
+    "remote": {
+      "type": "string",
+      "title": "Deprecated SSH remote",
+      "description": "Deprecated compatibility alias. Legacy SSH remote alias or user@host; combines with audio/video destination paths. Prefer target path.",
+      "required": false
+    },
+    "audio_dest_path": {
+      "type": "string",
+      "title": "Deprecated audio SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for audio downloads. Prefer target path.",
+      "required": false
+    },
+    "video_dest_path": {
+      "type": "string",
+      "title": "Deprecated video SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for video downloads. Prefer video target path.",
+      "required": false
+    },
     "audio_format": {
       "type": "string",
       "title": "Default audio codec",

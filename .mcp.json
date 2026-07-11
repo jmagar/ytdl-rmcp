@@ -13,6 +13,24 @@
       "description": "Destination for video downloads. Same forms as target path. Falls back to the target path if blank.",
       "default": ""
     },
+    "remote": {
+      "type": "string",
+      "title": "Deprecated SSH remote",
+      "description": "Deprecated compatibility alias. Legacy SSH remote alias or user@host; combines with audio/video destination paths. Prefer target path.",
+      "default": ""
+    },
+    "audio_dest_path": {
+      "type": "string",
+      "title": "Deprecated audio SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for audio downloads. Prefer target path.",
+      "default": ""
+    },
+    "video_dest_path": {
+      "type": "string",
+      "title": "Deprecated video SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for video downloads. Prefer video target path.",
+      "default": ""
+    },
     "audio_format": {
       "type": "string",
       "title": "Default audio codec",
@@ -97,7 +115,7 @@
       "type": "number",
       "title": "Staleness threshold (days)",
       "description": "Update yt-dlp when the installed version is older than this many days.",
-      "default": 1,
+      "default": 14,
       "min": 1,
       "max": 365
     },
@@ -168,6 +186,9 @@
       "env": {
         "YTDLP_TARGET_PATH": "${user_config.target_path}",
         "YTDLP_VIDEO_TARGET_PATH": "${user_config.video_target_path}",
+        "YTDLP_REMOTE": "${user_config.remote}",
+        "YTDLP_REMOTE_PATH": "${user_config.audio_dest_path}",
+        "YTDLP_VIDEO_REMOTE_PATH": "${user_config.video_dest_path}",
         "YTDLP_AUDIO_FORMAT": "${user_config.audio_format}",
         "YTDLP_SSH_OPTS": "${user_config.ssh_opts}",
         "YTDLP_STAGING_DIR": "${user_config.staging_dir}",

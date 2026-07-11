@@ -80,41 +80,37 @@ pub async fn run_download(
     input: DownloadInput,
 ) -> Result<String> {
     let started = std::time::Instant::now();
-    let legacy_target_path = input
-        .remote
-        .as_ref()
-        .zip(input.dest_path.as_ref())
-        .map(|(remote, path)| format!("{remote}:{path}"));
+    let legacy_target_path = legacy_ssh_target_path(
+        input.remote.as_deref(),
+        input.dest_path.as_deref(),
+        cfg.target_path.as_deref(),
+    );
     let target_path = input
         .target_path
         .clone()
         .or(legacy_target_path)
         .or_else(|| cfg.target_path.clone());
-    let legacy_video_target_path = input
-        .remote
-        .as_ref()
-        .zip(input.video_dest_path.as_ref())
-        .map(|(remote, path)| format!("{remote}:{path}"));
+    let legacy_video_target_path = legacy_ssh_target_path(
+        input.remote.as_deref(),
+        input.video_dest_path.as_deref(),
+        cfg.video_target_path
+            .as_deref()
+            .or(cfg.target_path.as_deref()),
+    );
     let video_target_path = input
         .video_target_path
         .clone()
         .or(legacy_video_target_path)
         .or_else(|| cfg.video_target_path.clone())
         .or_else(|| target_path.clone());
-    let per_call_target = input.target_path.is_some()
-        || input.video_target_path.is_some()
-        || input.remote.is_some()
-        || input.dest_path.is_some()
-        || input.video_dest_path.is_some();
-
     let Some(target_path) = target_path else {
         bail!("No target path. Pass 'target_path' or set YTDLP_TARGET_PATH.");
     };
     let target =
         crate::transfer::TransferTarget::parse_targets(&target_path, video_target_path.as_deref())?;
-    if target.contains_local() && per_call_target && !cfg.allow_local_targets {
+    if target.contains_local() && !cfg.allow_local_targets {
         bail!(
-            "Per-call local target paths are disabled. Use configured YTDLP_TARGET_PATH or set YTDLP_ALLOW_LOCAL_TARGETS=true."
+            "Local target paths are disabled. Set YTDLP_ALLOW_LOCAL_TARGETS=true to allow local filesystem destinations."
         );
     }
 
@@ -180,7 +176,12 @@ pub async fn run_download(
             bail!("Nothing was downloaded: {}", errs.join("; "));
         }
         // Archive hit / genuinely empty — succeed with a no-op summary.
-        let mut payload = build_download_payload(&results, &[], true, None, None);
+        let noop_dest_strings = destination_strings_for_mode(input.mode, &target);
+        let noop_dests: Vec<(&str, &str)> = noop_dest_strings
+            .iter()
+            .map(|(kind, dest)| (kind.as_str(), dest.as_str()))
+            .collect();
+        let mut payload = build_download_payload(&results, &noop_dests, true, None, None);
         record_plex_playlist(cfg, input.plex_playlist.clone(), &results, &mut payload).await;
         record_history(cfg, input.mode, &mut payload).await;
         return Ok(render_download(&payload, input.response_format));
@@ -306,6 +307,51 @@ pub async fn run_download(
         "download complete"
     );
     Ok(render_download(&payload, input.response_format))
+}
+
+fn legacy_ssh_target_path(
+    remote_override: Option<&str>,
+    path_override: Option<&str>,
+    configured_target: Option<&str>,
+) -> Option<String> {
+    if remote_override.is_none() && path_override.is_none() {
+        return None;
+    }
+    let configured = configured_target.and_then(ssh_parts);
+    let remote = remote_override
+        .map(str::to_string)
+        .or_else(|| configured.as_ref().map(|(remote, _)| remote.clone()))?;
+    let path = path_override
+        .map(str::to_string)
+        .or_else(|| configured.as_ref().map(|(_, path)| path.clone()))?;
+    Some(format!("ssh:{remote}:{path}"))
+}
+
+fn ssh_parts(target: &str) -> Option<(String, String)> {
+    match crate::transfer::TargetPath::parse(target).ok()? {
+        crate::transfer::TargetPath::Ssh { remote, path } => {
+            Some((remote.as_str().to_string(), path.as_str().to_string()))
+        }
+        _ => None,
+    }
+}
+
+fn destination_strings_for_mode(
+    mode: crate::model::DownloadMode,
+    target: &crate::transfer::TransferTarget,
+) -> Vec<(String, String)> {
+    match mode {
+        crate::model::DownloadMode::Audio => {
+            vec![("audio".to_string(), target.audio_target().display())]
+        }
+        crate::model::DownloadMode::Video => {
+            vec![("video".to_string(), target.video_target().display())]
+        }
+        crate::model::DownloadMode::Both => vec![
+            ("audio".to_string(), target.audio_target().display()),
+            ("video".to_string(), target.video_target().display()),
+        ],
+    }
 }
 
 #[cfg(not(windows))]

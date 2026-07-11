@@ -20,6 +20,21 @@
       "envVar": "YTDLP_VIDEO_TARGET_PATH"
     },
     {
+      "name": "Deprecated SSH remote",
+      "description": "Deprecated compatibility alias. Legacy SSH remote alias or user@host; combines with audio/video destination paths. Prefer YTDLP_TARGET_PATH.",
+      "envVar": "YTDLP_REMOTE"
+    },
+    {
+      "name": "Deprecated audio SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for audio downloads. Prefer YTDLP_TARGET_PATH.",
+      "envVar": "YTDLP_REMOTE_PATH"
+    },
+    {
+      "name": "Deprecated video SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for video downloads. Prefer YTDLP_VIDEO_TARGET_PATH.",
+      "envVar": "YTDLP_VIDEO_REMOTE_PATH"
+    },
+    {
       "name": "Allow local targets",
       "description": "Permit /path local filesystem destinations. Keep disabled unless you trust MCP callers to choose local write locations. Default: false.",
       "envVar": "YTDLP_ALLOW_LOCAL_TARGETS",

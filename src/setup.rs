@@ -60,7 +60,7 @@ pub async fn run() -> Result<()> {
     // 2. Prompt for config.
     let theme = ColorfulTheme::default();
     let target_path: String = Input::with_theme(&theme)
-        .with_prompt("Target path (/path, host:/path, or rclone:path)")
+        .with_prompt("Target path (/path, host:/path, remote:path, or rclone:remote:path)")
         .interact_text()?;
     let video_target_path: String = Input::with_theme(&theme)
         .with_prompt("Video target path (blank = same as target path)")
@@ -133,6 +133,8 @@ pub async fn run() -> Result<()> {
 }
 
 fn registration_envs(target_path: String, video_target_path: String) -> Vec<(String, String)> {
+    let allow_local_targets = is_local_target(&target_path)
+        || (!video_target_path.trim().is_empty() && is_local_target(&video_target_path));
     let mut envs: Vec<(String, String)> = vec![
         ("YTDLP_TARGET_PATH".into(), target_path),
         ("YTDLP_EXTRACTOR_ARGS".into(), DEFAULT_EXTRACTOR_ARGS.into()),
@@ -140,7 +142,24 @@ fn registration_envs(target_path: String, video_target_path: String) -> Vec<(Str
     if !video_target_path.trim().is_empty() {
         envs.push(("YTDLP_VIDEO_TARGET_PATH".into(), video_target_path));
     }
+    if allow_local_targets {
+        envs.push(("YTDLP_ALLOW_LOCAL_TARGETS".into(), "true".into()));
+    }
     envs
+}
+
+fn is_local_target(raw: &str) -> bool {
+    let raw = raw.trim();
+    raw.starts_with('/') || is_windows_absolute_path(raw)
+}
+
+fn is_windows_absolute_path(raw: &str) -> bool {
+    let bytes = raw.as_bytes();
+    raw.starts_with("\\\\")
+        || (bytes.len() >= 3
+            && bytes[0].is_ascii_alphabetic()
+            && bytes[1] == b':'
+            && (bytes[2] == b'/' || bytes[2] == b'\\'))
 }
 
 /// Build and run the CLI's `mcp add`. Argument ordering differs per CLI because

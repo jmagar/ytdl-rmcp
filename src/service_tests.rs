@@ -314,6 +314,28 @@ async fn local_transfer_target_requires_explicit_opt_in_before_tool_resolution()
 }
 
 #[tokio::test]
+async fn configured_local_transfer_target_requires_explicit_opt_in_before_tool_resolution() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("/tmp/ytdl-local".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("YTDLP_ALLOW_LOCAL_TARGETS=true"));
+    assert!(!err.contains("YTDLP_PATH"));
+    assert!(!err.contains("FFMPEG_PATH"));
+}
+
+#[tokio::test]
 async fn legacy_remote_and_dest_path_inputs_still_resolve_to_ssh_target() {
     let mut cfg = test_config();
     cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
@@ -336,6 +358,65 @@ async fn legacy_remote_and_dest_path_inputs_still_resolve_to_ssh_target() {
     assert!(err.contains("YTDLP_PATH"));
     assert!(!err.contains("No target path"));
     assert!(!err.contains("Local target paths are disabled"));
+}
+
+#[tokio::test]
+async fn legacy_one_sided_overrides_compose_with_configured_ssh_target() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("ssh:nas:/music".into());
+    cfg.video_target_path = Some("ssh:nas:/videos".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let dest_only = DownloadInput {
+        dest_path: Some("/other-music".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+    let err = run_download(&Arc::new(cfg.clone()), &ToolsCache::default(), dest_only)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("YTDLP_PATH"));
+    assert!(!err.contains("No target path"));
+    assert!(!err.contains("rclone"));
+
+    let remote_only = DownloadInput {
+        remote: Some("backup-nas".into()),
+        video_dest_path: Some("/other-videos".into()),
+        mode: DownloadMode::Video,
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), remote_only)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("YTDLP_PATH"));
+    assert!(!err.contains("No target path"));
+    assert!(!err.contains("rclone"));
+}
+
+#[tokio::test]
+async fn legacy_relative_dest_path_is_not_reclassified_as_rclone() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("ssh:nas:/music".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        dest_path: Some("relative-music".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("ssh target must be in ssh:host:/path form"));
+    assert!(!err.contains("YTDLP_PATH"));
 }
 
 #[tokio::test]

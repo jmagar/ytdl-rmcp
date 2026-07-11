@@ -157,6 +157,20 @@ fn target_path_accepts_local_ssh_and_rclone_targets() {
 }
 
 #[test]
+fn explicit_absolute_rclone_target_display_keeps_disambiguating_prefix() {
+    assert_eq!(
+        TargetPath::parse("rclone:gdrive:/Music/ytdl")
+            .unwrap()
+            .display(),
+        "rclone:gdrive:/Music/ytdl"
+    );
+    assert_eq!(
+        TargetPath::parse("gdrive:Music/ytdl").unwrap().display(),
+        "gdrive:Music/ytdl"
+    );
+}
+
+#[test]
 fn target_path_does_not_treat_windows_drive_paths_as_remotes() {
     #[cfg(windows)]
     {
@@ -277,4 +291,48 @@ fn rclone_target_builds_copy_args() {
             OsString::from("--create-empty-src-dirs"),
         ]
     );
+}
+
+#[tokio::test]
+async fn local_copy_rejects_destination_inside_source() {
+    let root = tempfile::tempdir().unwrap();
+    let src = root.path().join("src");
+    let nested_dest = src.join("nested");
+    tokio::fs::create_dir_all(&src).await.unwrap();
+    tokio::fs::write(src.join("song.mp3"), b"audio")
+        .await
+        .unwrap();
+
+    let err = copy_dir_contents(&src, &nested_dest)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("must not be inside source"));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn local_copy_rejects_symlinks() {
+    use std::os::unix::fs::symlink;
+
+    let root = tempfile::tempdir().unwrap();
+    let src = root.path().join("src");
+    let dest = root.path().join("dest");
+    tokio::fs::create_dir_all(&src).await.unwrap();
+    tokio::fs::write(root.path().join("outside.mp3"), b"audio")
+        .await
+        .unwrap();
+    symlink(
+        root.path().join("outside.mp3"),
+        src.join("outside-link.mp3"),
+    )
+    .unwrap();
+
+    let err = copy_dir_contents(&src, &dest)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("refuses to follow symlink"));
 }

@@ -199,6 +199,9 @@ pub(crate) fn build_download_payload(
 }
 
 fn legacy_remote_dest(target: &str) -> (Option<String>, String) {
+    if target.starts_with("rclone:") {
+        return (None, target.to_string());
+    }
     if let Some((remote, path)) = target.split_once(":/") {
         return (Some(remote.to_string()), format!("/{path}"));
     }

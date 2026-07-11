@@ -292,6 +292,9 @@ Target path forms:
 | --- | --- | --- | --- | --- |
 | `YTDLP_TARGET_PATH` | Required for downloads | — | download | Destination for **audio**. Use `/path` for local, `host:/path` for SSH, or `remote:path` or `rclone:remote:/path` for rclone. |
 | `YTDLP_VIDEO_TARGET_PATH` | Optional | falls back to `YTDLP_TARGET_PATH` | download | Destination for **video** when video files should land somewhere different from audio. Same target forms. |
+| `YTDLP_REMOTE` | Deprecated | — | download | Legacy SSH remote alias or `user@host`. During migration, combines with `YTDLP_REMOTE_PATH` / `YTDLP_VIDEO_REMOTE_PATH` as explicit SSH targets. Prefer `YTDLP_TARGET_PATH`. |
+| `YTDLP_REMOTE_PATH` | Deprecated | — | download | Legacy absolute SSH path for audio. Requires `YTDLP_REMOTE`; relative paths are rejected. Prefer `YTDLP_TARGET_PATH`. |
+| `YTDLP_VIDEO_REMOTE_PATH` | Deprecated | — | download | Legacy absolute SSH path for video. Requires `YTDLP_REMOTE`; falls back to the audio target when unset. Prefer `YTDLP_VIDEO_TARGET_PATH`. |
 | `YTDLP_ALLOW_LOCAL_TARGETS` | Optional | `0` | download | Permit local filesystem targets such as `/path`. Keep disabled unless you trust MCP callers to choose local write locations. |
 | `YTDLP_AUDIO_FORMAT` | Optional | `mp3` | download | Default audio codec: `mp3`, `m4a`, `opus`, `flac`, `wav`, or `best`. |
 | `YTDLP_STAGING_DIR` | Optional | system temp | download | Local directory where media is staged before transfer. On transfer failure this staging copy is kept for retry. |
@@ -306,7 +309,7 @@ Target path forms:
 | `FPCALC_PATH` | Optional | `fpcalc` on `PATH` | identify, download retagging | Optional explicit path to the Chromaprint `fpcalc` executable. |
 | `YTDLP_MUSICBRAINZ_CONTACT` | Optional | GitHub repo URL | identify, download retagging | Contact URL/email included in MusicBrainz lookup User-Agent strings. |
 | `YTDLP_AUTO_UPDATE` | Optional | `1` | tool bootstrap | Re-download yt-dlp when stale. Disable only when `YTDLP_PATH`/hash pins are managing the executable externally. |
-| `YTDLP_MAX_AGE_DAYS` | Optional | `14` | tool bootstrap | Staleness threshold in days for yt-dlp auto-update. The local `.mcp.json` uses `1` so gateway relaunches pick up extractor fixes quickly. |
+| `YTDLP_MAX_AGE_DAYS` | Optional | `14` | tool bootstrap | Staleness threshold in days for yt-dlp auto-update. |
 | `YTDLP_UPDATE_PRE` | Optional | `0` | tool bootstrap | Track yt-dlp's nightly pre-release channel instead of stable. |
 | `YTDLP_EXTRACTOR_ARGS` | Required for reliable YouTube search/probe | `youtube:player_client=android` in install manifests; unset in bare process env | search, probe, download | Passed to yt-dlp `--extractor-args`. The Android YouTube client fixes common `This video is not available` metadata failures for official music videos. |
 | `YTDLP_TIMEOUT_SECS` | Optional | `1800` | search, probe, download | Timeout for each yt-dlp search/probe/download command. |

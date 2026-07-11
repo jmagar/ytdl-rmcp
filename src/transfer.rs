@@ -304,7 +304,13 @@ impl TargetPath {
         match self {
             Self::Local(path) => path.as_str().to_string(),
             Self::Ssh { remote, path } => format!("{}:{}", remote.as_str(), path.as_str()),
-            Self::Rclone(target) => target.as_str().to_string(),
+            Self::Rclone(target) => {
+                if target.as_str().contains(":/") {
+                    format!("rclone:{}", target.as_str())
+                } else {
+                    target.as_str().to_string()
+                }
+            }
         }
     }
 }
@@ -388,6 +394,7 @@ pub async fn ensure_remote_dir(
 }
 
 /// Ensure the destination exists when the target type has a directory primitive.
+#[cfg_attr(windows, allow(dead_code))]
 pub async fn ensure_target_dir(target: &TargetPath, ssh_opts: &[String]) -> Result<()> {
     match target {
         TargetPath::Local(path) => {
@@ -470,27 +477,39 @@ async fn local_rsync(dir: &Path, dest_path: &LocalPath) -> Result<()> {
 }
 
 async fn local_copy(dir: &Path, dest_path: &LocalPath) -> Result<()> {
-    let src = dir.to_path_buf();
-    let dest = Path::new(dest_path.as_str()).to_path_buf();
-    tokio::task::spawn_blocking(move || copy_dir_contents(&src, &dest))
-        .await
-        .map_err(|err| anyhow::anyhow!("local copy task failed: {err}"))?
+    copy_dir_contents(dir, Path::new(dest_path.as_str())).await
 }
 
-fn copy_dir_contents(src: &Path, dest: &Path) -> Result<()> {
-    std::fs::create_dir_all(dest)?;
-    for entry in std::fs::read_dir(src)? {
-        let entry = entry?;
-        let source_path = entry.path();
-        let dest_path = dest.join(entry.file_name());
-        let metadata = entry.metadata()?;
-        if metadata.is_dir() {
-            copy_dir_contents(&source_path, &dest_path)?;
-        } else if metadata.is_file() {
-            if let Some(parent) = dest_path.parent() {
-                std::fs::create_dir_all(parent)?;
+async fn copy_dir_contents(src: &Path, dest: &Path) -> Result<()> {
+    tokio::fs::create_dir_all(dest).await?;
+    let src_root = tokio::fs::canonicalize(src).await?;
+    let dest_root = tokio::fs::canonicalize(dest).await?;
+    if dest_root.starts_with(&src_root) {
+        bail!(
+            "local destination {} must not be inside source {}",
+            dest_root.display(),
+            src_root.display()
+        );
+    }
+
+    let mut stack = vec![(src_root, dest_root)];
+    while let Some((current_src, current_dest)) = stack.pop() {
+        tokio::fs::create_dir_all(&current_dest).await?;
+        let mut entries = tokio::fs::read_dir(&current_src).await?;
+        while let Some(entry) = entries.next_entry().await? {
+            let file_type = entry.file_type().await?;
+            let source_path = entry.path();
+            let dest_path = current_dest.join(entry.file_name());
+            if file_type.is_symlink() {
+                bail!(
+                    "local copy refuses to follow symlink {}",
+                    source_path.display()
+                );
+            } else if file_type.is_dir() {
+                stack.push((source_path, dest_path));
+            } else if file_type.is_file() {
+                tokio::fs::copy(&source_path, &dest_path).await?;
             }
-            std::fs::copy(&source_path, &dest_path)?;
         }
     }
     Ok(())
