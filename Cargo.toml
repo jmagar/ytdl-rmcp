@@ -1,6 +1,6 @@
 [package]
 name = "ytdl-rmcp"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Cross-platform MCP server that downloads media with yt-dlp, tags it, and transfers it to local, SSH, or rclone targets."
 license = "MIT"

@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1](https://github.com/jmagar/ytdl-rmcp/compare/v1.0.0...v1.0.1) (2026-07-11)
+
+
+### Dependencies
+
+* **deps:** bump actions/download-artifact from 4.3.0 to 8.0.1 ([#12](https://github.com/jmagar/ytdl-rmcp/issues/12)) ([3322370](https://github.com/jmagar/ytdl-rmcp/commit/3322370ce8cde64b9dd1634b40cb7d5f696b783f))
+* **deps:** bump actions/upload-artifact from 4.6.2 to 7.0.1 ([#8](https://github.com/jmagar/ytdl-rmcp/issues/8)) ([9850d0d](https://github.com/jmagar/ytdl-rmcp/commit/9850d0db3bddc33ab979fbe6233b808e5f5117f4))
+* **deps:** bump the cargo-dependencies group with 4 updates ([#26](https://github.com/jmagar/ytdl-rmcp/issues/26)) ([ba1a99f](https://github.com/jmagar/ytdl-rmcp/commit/ba1a99f76351bcfa06e10d201e6edcd84156f95c))
+* **deps:** bump the github-actions group with 14 updates ([#27](https://github.com/jmagar/ytdl-rmcp/issues/27)) ([9e8eb0d](https://github.com/jmagar/ytdl-rmcp/commit/9e8eb0d589e3df4441c183247fb55edbb4bbcbee))
+
 ## [1.0.0](https://github.com/jmagar/ytdl-rmcp/compare/v0.7.1...v1.0.0) (2026-07-11)
 
 
