@@ -5,6 +5,24 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0](https://github.com/jmagar/ytdl-rmcp/compare/v0.7.1...v1.0.0) (2026-07-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* unify transfer targets
+
+### Added
+
+* unify transfer targets ([4cc891e](https://github.com/jmagar/ytdl-rmcp/commit/4cc891e8e82d2621eb123dbbc6f161547b96de5f))
+
+
+### Fixed
+
+* align ytdl build workflows with rytdl binary ([f3377b5](https://github.com/jmagar/ytdl-rmcp/commit/f3377b55b1d71d3266aa8ce569274463971cbd79))
+* align ytdl npm launcher assets ([e1b392c](https://github.com/jmagar/ytdl-rmcp/commit/e1b392c2e69f332e5beecf12b45d95dc62337840))
+* harden target path migration ([c0af9e7](https://github.com/jmagar/ytdl-rmcp/commit/c0af9e7fcad01d04670e56139b83b740e2ed8094))
+
 ## [Unreleased]
 
 ## [1.0.0] - 2026-07-11
