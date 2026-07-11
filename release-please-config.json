@@ -67,7 +67,9 @@
       "component": "ytdl-rmcp",
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        "packages/ytdl-rmcp/package.json"
+        "packages/ytdl-rmcp/package.json",
+        "gemini-extension.json",
+        "mcpb/manifest.json"
       ]
     }
   }
