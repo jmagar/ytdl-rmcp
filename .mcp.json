@@ -1,8 +1,191 @@
 {
+  "user_config": {
+    "target_path": {
+      "type": "string",
+      "title": "Target path",
+      "description": "Destination for audio downloads. Use /path for local, host:/path or ssh:host:/path for SSH, and remote:path or rclone:remote:path for rclone.",
+      "default": "",
+      "required": false
+    },
+    "video_target_path": {
+      "type": "string",
+      "title": "Video target path",
+      "description": "Destination for video downloads. Same forms as target path. Falls back to the target path if blank.",
+      "default": ""
+    },
+    "remote": {
+      "type": "string",
+      "title": "Deprecated SSH remote",
+      "description": "Deprecated compatibility alias. Legacy SSH remote alias or user@host; combines with audio/video destination paths. Prefer target path.",
+      "default": ""
+    },
+    "audio_dest_path": {
+      "type": "string",
+      "title": "Deprecated audio SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for audio downloads. Prefer target path.",
+      "default": ""
+    },
+    "video_dest_path": {
+      "type": "string",
+      "title": "Deprecated video SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for video downloads. Prefer video target path.",
+      "default": ""
+    },
+    "audio_format": {
+      "type": "string",
+      "title": "Default audio codec",
+      "description": "Default codec when downloading audio: mp3, m4a, opus, flac, wav, or best.",
+      "default": "mp3"
+    },
+    "ssh_opts": {
+      "type": "string",
+      "title": "Extra SSH options",
+      "description": "Additional ssh options parsed with shell-word syntax, e.g. -i \"~/.ssh/ytdl key\" -o ProxyJump=media-bastion. Appended after -o BatchMode=yes. Malformed quoting is rejected. Optional.",
+      "default": ""
+    },
+    "staging_dir": {
+      "type": "directory",
+      "title": "Local staging dir",
+      "description": "Local directory to stage downloads before transfer. Defaults to system temp.",
+      "default": ""
+    },
+    "archive_dir": {
+      "type": "directory",
+      "title": "Download archive dir",
+      "description": "Where the use_archive download history lives. Defaults to the per-user state dir, usually ~/.local/state/ytdl-rmcp.",
+      "default": ""
+    },
+    "history_path": {
+      "type": "string",
+      "title": "Download ledger path",
+      "description": "JSONL file where completed download calls are logged for youtube_stats. Defaults to downloads.jsonl in the per-user state dir.",
+      "default": ""
+    },
+    "plex_url": {
+      "type": "string",
+      "title": "Plex server URL",
+      "description": "Optional Plex server base URL, e.g. http://plex.local:32400, used to add downloaded audio tracks to a Plex playlist.",
+      "default": ""
+    },
+    "plex_token": {
+      "type": "string",
+      "title": "Plex token",
+      "description": "Optional Plex auth token for playlist/search API calls.",
+      "default": "",
+      "sensitive": true
+    },
+    "plex_playlist": {
+      "type": "string",
+      "title": "Plex playlist",
+      "description": "Optional default Plex playlist title or ID to add downloaded audio tracks to. Can be overridden per youtube_download call.",
+      "default": "yt-dlp Downloads"
+    },
+    "clean_metadata": {
+      "type": "boolean",
+      "title": "Clean title metadata",
+      "description": "Strip common YouTube title noise such as '(Official Video)', '[Official Audio]', trailing channel handles, and extra whitespace before embedding metadata.",
+      "default": true
+    },
+    "acoustid_client_key": {
+      "type": "string",
+      "title": "AcoustID client key",
+      "description": "Application API key for AcoustID lookups used by youtube_identify and automatic high-confidence download retagging.",
+      "default": "",
+      "sensitive": true
+    },
+    "fpcalc_path": {
+      "type": "string",
+      "title": "fpcalc path",
+      "description": "Optional path to the Chromaprint fpcalc executable. If blank, youtube_identify searches PATH.",
+      "default": ""
+    },
+    "musicbrainz_contact": {
+      "type": "string",
+      "title": "MusicBrainz contact",
+      "description": "Contact URL or email included in the User-Agent for metadata lookup requests.",
+      "default": ""
+    },
+    "auto_update": {
+      "type": "boolean",
+      "title": "Auto-update yt-dlp",
+      "description": "Update yt-dlp at server startup when stale. Recommended on — each session relaunch self-heals against extractor breakage.",
+      "default": true
+    },
+    "max_age_days": {
+      "type": "number",
+      "title": "Staleness threshold (days)",
+      "description": "Update yt-dlp when the installed version is older than this many days.",
+      "default": 14,
+      "min": 1,
+      "max": 365
+    },
+    "update_pre": {
+      "type": "boolean",
+      "title": "Track nightly channel",
+      "description": "Update from yt-dlp's nightly pre-release channel instead of stable.",
+      "default": false
+    },
+    "extractor_args": {
+      "type": "string",
+      "title": "yt-dlp extractor args",
+      "description": "Passed to yt-dlp's --extractor-args. The Android YouTube client keeps search/probe working for official music videos that reject yt-dlp's default clients.",
+      "default": "youtube:player_client=android"
+    },
+    "ytdlp_path": {
+      "type": "string",
+      "title": "yt-dlp path",
+      "description": "Use a specific yt-dlp executable instead of auto-resolution/auto-download. Optional.",
+      "default": ""
+    },
+    "ffmpeg_path": {
+      "type": "string",
+      "title": "ffmpeg path",
+      "description": "Use a specific ffmpeg executable instead of auto-resolution/auto-download. Optional.",
+      "default": ""
+    },
+    "ytdlp_timeout_secs": {
+      "type": "number",
+      "title": "yt-dlp timeout (seconds)",
+      "description": "Maximum runtime for each yt-dlp probe/download command.",
+      "default": 1800,
+      "min": 1
+    },
+    "transfer_timeout_secs": {
+      "type": "number",
+      "title": "Transfer timeout (seconds)",
+      "description": "Maximum runtime budget for each transfer phase.",
+      "default": 600,
+      "min": 1
+    },
+    "ytdlp_sha256": {
+      "type": "string",
+      "title": "yt-dlp SHA-256 pin",
+      "description": "Optional SHA-256 digest required for the resolved yt-dlp executable.",
+      "default": ""
+    },
+    "ffmpeg_sha256": {
+      "type": "string",
+      "title": "ffmpeg SHA-256 pin",
+      "description": "Optional SHA-256 digest required for the resolved ffmpeg executable.",
+      "default": ""
+    },
+    "allow_local_targets": {
+      "type": "boolean",
+      "title": "Allow local targets",
+      "description": "Permit /path local filesystem destinations. Keep disabled unless you trust MCP callers to choose local write locations.",
+      "default": false
+    }
+  },
   "mcpServers": {
-    "ytdl-mcp": {
-      "command": "${CLAUDE_PLUGIN_ROOT}/scripts/run-server.sh",
+    "ytdl-rmcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "ytdl-rmcp"
+      ],
       "env": {
+        "YTDLP_TARGET_PATH": "${user_config.target_path}",
+        "YTDLP_VIDEO_TARGET_PATH": "${user_config.video_target_path}",
         "YTDLP_REMOTE": "${user_config.remote}",
         "YTDLP_REMOTE_PATH": "${user_config.audio_dest_path}",
         "YTDLP_VIDEO_REMOTE_PATH": "${user_config.video_dest_path}",
@@ -27,7 +210,8 @@
         "YTDLP_TIMEOUT_SECS": "${user_config.ytdlp_timeout_secs}",
         "YTDLP_TRANSFER_TIMEOUT_SECS": "${user_config.transfer_timeout_secs}",
         "YTDLP_SHA256": "${user_config.ytdlp_sha256}",
-        "FFMPEG_SHA256": "${user_config.ffmpeg_sha256}"
+        "FFMPEG_SHA256": "${user_config.ffmpeg_sha256}",
+        "YTDLP_ALLOW_LOCAL_TARGETS": "${user_config.allow_local_targets}"
       }
     }
   }

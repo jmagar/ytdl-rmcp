@@ -31,16 +31,16 @@ pub struct Tools {
 }
 
 /// This app's per-user directories (cache/state/…). Single source of the
-/// `tv/tootie/ytdl-mcp` identity.
+/// `tv/tootie/ytdl-rmcp` identity.
 pub fn project_dirs() -> Option<ProjectDirs> {
-    ProjectDirs::from("tv", "tootie", "ytdl-mcp")
+    ProjectDirs::from("tv", "tootie", "ytdl-rmcp")
 }
 
 /// Per-user cache dir holding downloaded binaries (`<cache>/bin`).
 pub fn cache_bin_dir() -> PathBuf {
     project_dirs()
         .map(|d| d.cache_dir().join("bin"))
-        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-mcp/bin"))
+        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-rmcp/bin"))
 }
 
 /// Platform executable name: appends `.exe` on Windows.

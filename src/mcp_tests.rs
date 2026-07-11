@@ -9,9 +9,9 @@ use crate::config::Config;
 /// would flake if any `YTDLP_*` var is set or another test mutates env.
 fn test_config() -> Config {
     Config {
-        remote: None,
-        dest_path: None,
-        video_dest_path: None,
+        target_path: None,
+        video_target_path: None,
+        allow_local_targets: false,
         staging_dir: None,
         audio_format: "mp3".into(),
         ssh_opts: vec![],
@@ -118,7 +118,7 @@ fn get_info_enables_tools_and_resources() {
         info.capabilities.resources.is_some(),
         "server must advertise resource capability (search-UI app resource)"
     );
-    assert_eq!(info.server_info.name, "ytdl-mcp");
+    assert_eq!(info.server_info.name, "ytdl-rmcp");
 }
 
 #[test]

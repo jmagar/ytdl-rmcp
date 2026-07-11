@@ -2,9 +2,9 @@ use super::*;
 
 fn test_config() -> Config {
     Config {
-        remote: None,
-        dest_path: None,
-        video_dest_path: None,
+        target_path: None,
+        video_target_path: None,
+        allow_local_targets: false,
         staging_dir: None,
         audio_format: "mp3".into(),
         ssh_opts: vec![],
@@ -193,7 +193,7 @@ fn resolve_no_download_would_bootstrap_when_nothing_present() {
     let resolved = resolve_no_download(
         None,
         "YTDLP_PATH",
-        "ytdl-mcp-definitely-not-a-real-binary-xyz",
+        "ytdl-rmcp-definitely-not-a-real-binary-xyz",
     )
     .unwrap();
 

@@ -1,0 +1,29 @@
+{
+  "name": "ytdl-rmcp",
+  "version": "1.0.0",
+  "description": "Node launcher for the ytdl-rmcp Rust MCP server and CLI binary.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jmagar/ytdl-rmcp.git",
+    "directory": "packages/ytdl-rmcp"
+  },
+  "bin": {
+    "ytdl-rmcp": "bin/rytdl.js",
+    "rytdl": "bin/rytdl.js"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "scripts/",
+    "README.md"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/install.js",
+    "test": "node --test",
+    "check": "node --check bin/rytdl.js && node --check scripts/install.js && node --check lib/platform.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

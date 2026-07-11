@@ -1,7 +1,7 @@
-//! ytdl-mcp — a cross-platform MCP server that downloads media with yt-dlp,
-//! tags it, and rsyncs it to an SSH remote.
+//! ytdl-rmcp — a cross-platform MCP server that downloads media with yt-dlp,
+//! tags it, and transfers it to a local, SSH, or rclone target.
 //!
-//! Bare invocation serves MCP over stdio. `ytdl-mcp setup` installs the
+//! Bare invocation serves MCP over stdio. `ytdl-rmcp setup` installs the
 //! external tools and registers the server into the user's agent CLIs.
 
 mod bootstrap;
@@ -28,7 +28,7 @@ use crate::config::Config;
 use crate::mcp::YtdlServer;
 
 #[derive(Parser)]
-#[command(name = "ytdl-mcp", version, about)]
+#[command(name = "rytdl", version, about)]
 struct Cli {
     #[command(subcommand)]
     command: Option<Command>,
@@ -69,7 +69,7 @@ fn init_tracing() {
 
 async fn serve() -> Result<()> {
     let cfg = Config::from_env_result()?;
-    tracing::info!("ytdl-mcp serving over stdio");
+    tracing::info!("rytdl serving over stdio");
     let service = YtdlServer::new(cfg).serve(stdio()).await?;
     service.waiting().await?;
     Ok(())

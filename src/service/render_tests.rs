@@ -28,13 +28,39 @@ fn download_payload_marks_files_with_error_as_partial() {
         ..Default::default()
     }];
 
-    let payload = download_payload(&results, "media", &[("video", "/video")], true, None, None);
+    let payload = download_payload(&results, &[("video", "media:/video")], true, None, None);
 
     let item = &payload["items"][0];
     assert_eq!(item["status"], "partial");
     assert_eq!(item["files"].as_array().unwrap().len(), 1);
     assert_eq!(payload["partial_items"], 1);
     assert_eq!(payload["failed_items"], 0);
+}
+
+#[test]
+fn download_payload_does_not_classify_explicit_rclone_as_legacy_ssh() {
+    let results = vec![ItemResult {
+        url: "https://example.test/watch".into(),
+        title: Some("Song".into()),
+        files: vec![media_file("audio", "Song [abc].mp3")],
+        ..Default::default()
+    }];
+
+    let payload = download_payload(
+        &results,
+        &[("audio", "rclone:gdrive:/Music/ytdl")],
+        true,
+        None,
+        None,
+    );
+
+    assert_eq!(payload["remote"], serde_json::Value::Null);
+    assert_eq!(payload["dest_path"], "rclone:gdrive:/Music/ytdl");
+    assert_eq!(payload["target_path"], "rclone:gdrive:/Music/ytdl");
+    assert_eq!(
+        payload["destinations"][0]["dest_path"],
+        "rclone:gdrive:/Music/ytdl"
+    );
 }
 
 #[test]

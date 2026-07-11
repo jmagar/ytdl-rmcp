@@ -1,4 +1,4 @@
-# ytdl-mcp — agent memory
+# ytdl-rmcp — agent memory
 
 Cross-platform single-binary MCP server: downloads media with yt-dlp, embeds
 metadata + cover art, organizes by artist, and rsync/scp's to an SSH remote.
@@ -9,7 +9,7 @@ User-facing docs live in `README.md`. This file is for working **on** the repo.
 ## Long-Lived Branches
 
 - `marketplace-no-mcp` is an intentional long-lived marketplace variant branch,
-  not stale cleanup. It keeps the ytdl-mcp plugin/skill surface available while
+  not stale cleanup. It keeps the ytdl-rmcp plugin/skill surface available while
   removing bundled MCP server registration for environments where the server is
   already connected through the Labby gateway.
 - Do not merge `marketplace-no-mcp` into `main` by default, and do not delete it
@@ -23,7 +23,7 @@ User-facing docs live in `README.md`. This file is for working **on** the repo.
 | --- | --- |
 | `main.rs` | clap dispatch: bare → serve stdio, `setup` → installer, `doctor` → diagnostics; stderr tracing |
 | `config.rs` | `Config::from_env_result` — all `YTDLP_*` env vars (the panicking `from_env` is now `#[cfg(test)]`-only) |
-| `doctor.rs` | `ytdl-mcp doctor` — read-only install/diagnostics probe: prints version/git-sha, platform, resolved tool paths, and redacted config presence |
+| `doctor.rs` | `ytdl-rmcp doctor` — read-only install/diagnostics probe: prints version/git-sha, platform, resolved tool paths, and redacted config presence |
 | `model.rs` | tool input structs + enums (serde + schemars); `Urls` accepts string or array |
 | `mcp.rs` | `rmcp` `ServerHandler` via `#[tool_router]`/`#[tool]`/`#[tool_handler]` — 6 tools (`youtube_download`, `youtube_probe`, `youtube_identify`, `youtube_search`, `youtube_stats`, `youtube_search_ui`) |
 | `service.rs` | orchestration: resolve tools → download → transfer → format payload |
@@ -109,17 +109,20 @@ invoke the real rustup cargo directly: `~/.cargo/bin/cargo xwin build …`.
 
 ## Distribution
 
-- **GitHub**: `jmagar/ytdl-mcp`. Release CI in `.github/workflows/release.yml`
+- **GitHub**: `jmagar/ytdl-rmcp`. Release CI in `.github/workflows/release.yml`
   builds linux + windows-msvc and attaches to `v*` releases; `ci.yml` runs
   fmt/clippy/test + a Windows cross-build smoke per push/PR.
-- **Claude Code plugin**: root `.claude-plugin/`, `.mcp.json`, `hooks/`,
-  `scripts/` (`run-server.sh` uses an installed `ytdl-mcp` from PATH; plugin
-  hooks do not download or install binaries). Registered in the
-  `jmagar/lab` marketplace as `ytdl-mcp`.
-- **Gemini extension**: `gemini-extension.json` (settings → `YTDLP_*` env vars).
+- **npm launcher**: `packages/ytdl-rmcp` publishes `ytdl-rmcp` to npm. MCP clients
+  should launch with `npx -y ytdl-rmcp`; the npm postinstall/lazy installer
+  downloads the matching GitHub Release binary.
+- **Claude Code plugin**: root `.claude-plugin/`, `.mcp.json`, `hooks/`;
+  `.mcp.json` uses `npx -y ytdl-rmcp` plus plugin `userConfig` env mapping.
+  Registered in the `jmagar/lab` marketplace as `ytdl-rmcp`.
+- **Gemini extension**: `gemini-extension.json` (settings → `YTDLP_*` env vars);
+  prefer the npm launcher command for MCP stdio registration.
 - **MCP bundle**: `mcpb/manifest.json` (`server.type: "binary"`, manifest schema
   `0.3`). `scripts/build-mcpb.sh` stages the linux + windows binaries into
-  `server/` and runs the `@anthropic-ai/mcpb` CLI to produce `ytdl-mcp.mcpb`; the
+  `server/` and runs the `@anthropic-ai/mcpb` CLI to produce `ytdl-rmcp.mcpb`; the
   `mcpb` job in `release.yml` attaches it to `v*` releases. Targets
   `["linux", "win32"]` only — no macOS binary is built. `check-packaging.sh`
   cross-checks all four config surfaces: the Claude plugin's `userConfig`

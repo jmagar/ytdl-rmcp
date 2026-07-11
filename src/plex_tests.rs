@@ -139,9 +139,9 @@ fn add_downloaded_audio_creates_playlist_with_first_matched_track() {
 #[test]
 fn add_downloaded_audio_without_audio_files_does_not_require_plex_config() {
     let cfg = Config {
-        remote: None,
-        dest_path: None,
-        video_dest_path: None,
+        target_path: None,
+        video_target_path: None,
+        allow_local_targets: false,
         staging_dir: None,
         audio_format: "mp3".into(),
         ssh_opts: Vec::new(),

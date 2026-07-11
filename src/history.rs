@@ -27,7 +27,7 @@ fn default_history_path() -> PathBuf {
                 .unwrap_or_else(|| d.data_dir())
                 .join("downloads.jsonl")
         })
-        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-mcp-state/downloads.jsonl"))
+        .unwrap_or_else(|| std::env::temp_dir().join("ytdl-rmcp-state/downloads.jsonl"))
 }
 
 fn history_path(cfg: &Config) -> PathBuf {
@@ -76,15 +76,14 @@ pub(crate) fn append_download(
             .with_context(|| format!("create history directory {}", parent.display()))?;
     }
 
-    // Persist the same ledger fields as before. Reading them off the typed
-    // `DownloadPayload` (rather than by string key) means a field rename is now
-    // a compile error here instead of a silently-`null` JSONL column. The
-    // emitted keys/shape are unchanged.
+    // Persist both the current target-path field and deprecated SSH split
+    // fields so mixed-version ledgers remain readable during the migration.
     let entry = json!({
         "timestamp": timestamp_now(),
         "mode": mode.as_str(),
         "remote": payload.remote,
         "dest_path": payload.dest_path,
+        "target_path": payload.target_path,
         "destination": payload.destination,
         "destinations": payload.destinations,
         "transferred": payload.transferred,

@@ -1,23 +1,23 @@
 ---
 date: 2026-06-13 15:06:15 EST
-repo: git@github.com:jmagar/ytdl-mcp.git
+repo: git@github.com:jmagar/ytdl-rmcp.git
 branch: main
 head: 8d0d353
 session id: e4558680-1081-4d6a-8417-e10f29ef0281
-transcript: /home/jmagar/.claude/projects/-home-jmagar-workspace-ytdl-mcp/e4558680-1081-4d6a-8417-e10f29ef0281.jsonl
-working directory: /home/jmagar/workspace/ytdl-mcp
-worktree: /home/jmagar/workspace/ytdl-mcp 8d0d353 [main]
+transcript: /home/jmagar/.claude/projects/-home-jmagar-workspace-ytdl-rmcp/e4558680-1081-4d6a-8417-e10f29ef0281.jsonl
+working directory: /home/jmagar/workspace/ytdl-rmcp
+worktree: /home/jmagar/workspace/ytdl-rmcp 8d0d353 [main]
 ---
 
-# ytdl-mcp MCPB release, metadata workflow, and smoke verification
+# ytdl-rmcp MCPB release, metadata workflow, and smoke verification
 
 ## User Request
 
-Build out the ytdl-mcp YouTube MCP experience, including an MCP UI, a regular tool surface, download history/statistics, Plex playlist integration, metadata normalization and AcoustID/MusicBrainz retagging, containerization, release automation, MCPB/Desktop extension packaging, deployment support, and final validation.
+Build out the ytdl-rmcp YouTube MCP experience, including an MCP UI, a regular tool surface, download history/statistics, Plex playlist integration, metadata normalization and AcoustID/MusicBrainz retagging, containerization, release automation, MCPB/Desktop extension packaging, deployment support, and final validation.
 
 ## Session Overview
 
-The session expanded ytdl-mcp from a downloader into a broader media workflow server: YouTube search and UI support, download stats, Plex playlist updates, metadata cleanup, AcoustID/MusicBrainz identification and tag writing, container packaging, GitHub release automation, MCPB/DXT packaging, and verification through local builds, Docker, CI/release workflows, and mcporter MCP calls.
+The session expanded ytdl-rmcp from a downloader into a broader media workflow server: YouTube search and UI support, download stats, Plex playlist updates, metadata cleanup, AcoustID/MusicBrainz identification and tag writing, container packaging, GitHub release automation, MCPB/DXT packaging, and verification through local builds, Docker, CI/release workflows, and mcporter MCP calls.
 
 Late in the session, Claude Desktop failed to install the MCPB/DXT with `handleDxtFile: reply was never sent`. The final fix was to avoid installer-time required user configuration in the MCPB manifest, publish a new release, and verify the public bundle contents.
 
@@ -28,7 +28,7 @@ Late in the session, Claude Desktop failed to install the MCPB/DXT with `handleD
 3. Added Plex playlist support for downloaded audio and later made downloads auto-add tracks to the configured playlist.
 4. Improved metadata handling with title cleanup, AcoustID fingerprinting, MusicBrainz candidate lookup, high-confidence preview generation, and optional tag writing.
 5. Containerized the server with ffmpeg, fpcalc, SSH, and rsync dependencies, then added a workflow that publishes a container image on pushes to `main`.
-6. Deployed the container on tootie under `/mnt/cache/compose/ytdl-mcp` and used it for metadata/library work.
+6. Deployed the container on tootie under `/mnt/cache/compose/ytdl-rmcp` and used it for metadata/library work.
 7. Added MCPB/DXT packaging and release automation so main pushes publish Linux, Windows, `.mcpb`, and `.dxt` assets.
 8. Investigated repeated Claude Desktop extension install failures, found an upstream MCPB/Desktop issue with the same `handleDxtFile` symptom, and patched the bundle manifest to avoid required config gates during install.
 9. Published release `v0.7.0-main.4.8d0d3530681c`, verified assets, cleaned stale branches, built the latest local binary and container, and used mcporter to smoke-test the MCP server.
@@ -38,7 +38,7 @@ Late in the session, Claude Desktop failed to install the MCPB/DXT with `handleD
 - Claude Desktop's `handleDxtFile: reply was never sent` failure matches upstream MCPB issue `modelcontextprotocol/mcpb#279`; valid bundles can still fail inside the Desktop installer IPC path.
 - MCPB's config helper substitutes `${user_config.*}` only when a default or user value exists; required or unset values can force brittle installer behavior before users reach configuration.
 - `mcpb validate <bundle.mcpb>` reads the bundle path as a manifest path in the CLI version tested, so `mcpb info`, direct ZIP inspection, manifest validation, and published asset checks were more useful bundle checks.
-- The final public release contains `ytdl-mcp.mcpb` and `ytdl-mcp.dxt` with identical bytes and a manifest with no required user config gates.
+- The final public release contains `ytdl-rmcp.mcpb` and `ytdl-rmcp.dxt` with identical bytes and a manifest with no required user config gates.
 - The available Claude transcript path existed, but it only contained a prior `/clear` session-start record and did not contain the current Codex conversation.
 
 ## Technical Decisions
@@ -144,7 +144,7 @@ The available transcript path was read, but it did not contain the active Codex 
 - **Shell commands.** Used for git status, branch cleanup, cargo builds, Docker builds, release inspection, and artifact verification.
 - **File edits.** Used `apply_patch`-style edits for source/docs changes during the session and this generated session artifact.
 - **GitHub CLI.** Used `gh release`, `gh run`, and `gh pr` to verify releases, workflows, and PR state.
-- **Docker CLI.** Built and inspected the local `ytdl-mcp:latest` image and smoke-tested `--version`.
+- **Docker CLI.** Built and inspected the local `ytdl-rmcp:latest` image and smoke-tested `--version`.
 - **Cargo.** Built and tested the Rust binary with `cargo build --release`, `cargo test`, `cargo clippy`, and `cargo fmt --check`.
 - **mcporter.** Listed tool schemas and called MCP tools over stdio against the built binary.
 - **Skills/plugins.** Used Aurora/frontend-related skills for UI work, repo-status for branch/worktree audit, mcporter for MCP smoke testing, and save-to-md for this session log.
@@ -154,11 +154,11 @@ The available transcript path was read, but it did not contain the active Codex 
 
 | command | result |
 |---|---|
-| `cargo build --release` | Built `/home/jmagar/workspace/ytdl-mcp/target/release/ytdl-mcp` successfully. |
-| `docker build -t ytdl-mcp:latest .` | Built local container image `sha256:2b037b0ff3fcb259d70190e530e29aa2a6853cac93c262fe23d848e4303f27b9`. |
-| `docker run --rm ytdl-mcp:latest --version` | Returned `ytdl-mcp 0.7.0`. |
-| `mcporter list --stdio ./target/release/ytdl-mcp --stdio-arg serve --schema --json` | Server status `ok`; six tools discovered. |
-| `mcporter call ... youtube_stats` | Returned JSON stats from `/home/jmagar/.local/state/ytdl-mcp/downloads.jsonl`. |
+| `cargo build --release` | Built `/home/jmagar/workspace/ytdl-rmcp/target/release/ytdl-rmcp` successfully. |
+| `docker build -t ytdl-rmcp:latest .` | Built local container image `sha256:2b037b0ff3fcb259d70190e530e29aa2a6853cac93c262fe23d848e4303f27b9`. |
+| `docker run --rm ytdl-rmcp:latest --version` | Returned `ytdl-rmcp 0.7.0`. |
+| `mcporter list --stdio ./target/release/ytdl-rmcp --stdio-arg serve --schema --json` | Server status `ok`; six tools discovered. |
+| `mcporter call ... youtube_stats` | Returned JSON stats from `/home/jmagar/.local/state/ytdl-rmcp/downloads.jsonl`. |
 | `mcporter call ... youtube_search` | Returned a real YouTube search result for `pokemon route 1 music`. |
 | `mcporter call ... youtube_probe` | Returned metadata for `Pokemon Blue/Red - Route 1`, including `format_count: 13`. |
 | `mcporter call ... youtube_search_ui` | Returned structured search UI payload. |
@@ -195,11 +195,11 @@ The available transcript path was read, but it did not contain the active Codex 
 | `cargo test` | Unit tests pass. | 75 tests passed. | pass |
 | `cargo clippy --all-targets -- -D warnings` | No clippy warnings. | Passed. | pass |
 | `REQUIRE_SHELLCHECK=1 scripts/check-packaging.sh` | Packaging invariants pass. | Passed. | pass |
-| `cargo build --release` | Release binary builds. | Built `target/release/ytdl-mcp`. | pass |
-| `./target/release/ytdl-mcp --version` | Version prints. | `ytdl-mcp 0.7.0`. | pass |
-| `docker build -t ytdl-mcp:latest .` | Container image builds. | Built `sha256:2b037b0ff3fcb259d70190e530e29aa2a6853cac93c262fe23d848e4303f27b9`. | pass |
-| `docker run --rm ytdl-mcp:latest --version` | Container runs binary. | `ytdl-mcp 0.7.0`. | pass |
-| `mcporter list --stdio ./target/release/ytdl-mcp --stdio-arg serve --schema --json` | MCP server initializes and lists tools. | Status `ok`, six tools listed. | pass |
+| `cargo build --release` | Release binary builds. | Built `target/release/ytdl-rmcp`. | pass |
+| `./target/release/ytdl-rmcp --version` | Version prints. | `ytdl-rmcp 0.7.0`. | pass |
+| `docker build -t ytdl-rmcp:latest .` | Container image builds. | Built `sha256:2b037b0ff3fcb259d70190e530e29aa2a6853cac93c262fe23d848e4303f27b9`. | pass |
+| `docker run --rm ytdl-rmcp:latest --version` | Container runs binary. | `ytdl-rmcp 0.7.0`. | pass |
+| `mcporter list --stdio ./target/release/ytdl-rmcp --stdio-arg serve --schema --json` | MCP server initializes and lists tools. | Status `ok`, six tools listed. | pass |
 | `mcporter call ... youtube_search` | Search returns a result. | Returned `Pokemon Blue/Red - Route 1`. | pass |
 | `mcporter call ... youtube_probe` | Probe returns metadata. | Returned title, video ID, duration, and `format_count: 13`. | pass |
 | `mcporter call ... youtube_search_ui` | UI tool returns structured payload. | Returned query, limit, and results. | pass |
@@ -220,11 +220,11 @@ The available transcript path was read, but it did not contain the active Codex 
 
 ## References
 
-- Release: https://github.com/jmagar/ytdl-mcp/releases/tag/v0.7.0-main.4.8d0d3530681c
+- Release: https://github.com/jmagar/ytdl-rmcp/releases/tag/v0.7.0-main.4.8d0d3530681c
 - Upstream MCPB issue: https://github.com/modelcontextprotocol/mcpb/issues/279
-- Release workflow run: https://github.com/jmagar/ytdl-mcp/actions/runs/27457134241
-- CI workflow run: https://github.com/jmagar/ytdl-mcp/actions/runs/27457134238
-- Container workflow run: https://github.com/jmagar/ytdl-mcp/actions/runs/27457134245
+- Release workflow run: https://github.com/jmagar/ytdl-rmcp/actions/runs/27457134241
+- CI workflow run: https://github.com/jmagar/ytdl-rmcp/actions/runs/27457134238
+- Container workflow run: https://github.com/jmagar/ytdl-rmcp/actions/runs/27457134245
 
 ## Open Questions
 
@@ -233,7 +233,7 @@ The available transcript path was read, but it did not contain the active Codex 
 
 ## Next Steps
 
-1. Test `ytdl-mcp.mcpb` from `v0.7.0-main.4.8d0d3530681c` in Claude Desktop.
+1. Test `ytdl-rmcp.mcpb` from `v0.7.0-main.4.8d0d3530681c` in Claude Desktop.
 2. Configure the installed extension's SSH remote and audio destination before calling `youtube_download`.
 3. If Desktop still reports `handleDxtFile: reply was never sent`, collect Claude Desktop logs and compare with upstream MCPB issue #279.
-4. Use the local binary at `/home/jmagar/workspace/ytdl-mcp/target/release/ytdl-mcp` or the local image `ytdl-mcp:latest` for immediate testing.
+4. Use the local binary at `/home/jmagar/workspace/ytdl-rmcp/target/release/ytdl-rmcp` or the local image `ytdl-rmcp:latest` for immediate testing.

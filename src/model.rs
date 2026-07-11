@@ -239,13 +239,19 @@ pub struct DownloadInput {
     /// Output container when downloading video.
     #[serde(default)]
     pub container: VideoContainer,
-    /// SSH remote (alias or user@host). Falls back to YTDLP_REMOTE.
+    /// Destination target. Use `/path` for local, `host:/path` for SSH, or `remote:path` for rclone.
+    #[serde(default)]
+    pub target_path: Option<String>,
+    /// Destination target for video. Falls back to YTDLP_VIDEO_TARGET_PATH, then target_path.
+    #[serde(default)]
+    pub video_target_path: Option<String>,
+    /// Deprecated: SSH remote alias or user@host. Use `target_path` instead.
     #[serde(default)]
     pub remote: Option<String>,
-    /// Absolute remote dir for audio. Falls back to YTDLP_REMOTE_PATH.
+    /// Deprecated: SSH destination path. Use `target_path` instead.
     #[serde(default)]
     pub dest_path: Option<String>,
-    /// Absolute remote dir for video. Falls back to YTDLP_VIDEO_REMOTE_PATH, then dest_path.
+    /// Deprecated: SSH video destination path. Use `video_target_path` instead.
     #[serde(default)]
     pub video_dest_path: Option<String>,
     /// Keep the local staging copy after a successful transfer.

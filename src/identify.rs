@@ -182,8 +182,8 @@ fn user_agent(cfg: &crate::config::Config) -> String {
         .as_deref()
         .filter(|s| !s.trim().is_empty())
     {
-        Some(contact) => format!("ytdl-mcp/{version} ({contact})"),
-        None => format!("ytdl-mcp/{version} (https://github.com/jmagar/ytdl-mcp)"),
+        Some(contact) => format!("ytdl-rmcp/{version} ({contact})"),
+        None => format!("ytdl-rmcp/{version} (https://github.com/jmagar/ytdl-rmcp)"),
     }
 }
 

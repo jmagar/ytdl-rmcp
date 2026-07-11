@@ -12,9 +12,9 @@ use crate::service::{DownloadFile, DownloadItem, DownloadPayload, DownloadStatus
 /// for these tests; everything else is a benign default.
 fn config_with_history(path: &Path) -> Config {
     Config {
-        remote: None,
-        dest_path: None,
-        video_dest_path: None,
+        target_path: None,
+        video_target_path: None,
+        allow_local_targets: false,
         staging_dir: None,
         audio_format: "mp3".into(),
         ssh_opts: vec![],
@@ -55,8 +55,9 @@ fn sample_payload(uploader: &str, transferred: bool) -> DownloadPayload {
     DownloadPayload {
         transferred,
         transfer_error: None,
-        remote: "host:/music".into(),
+        remote: Some("host".into()),
         dest_path: "/music".into(),
+        target_path: "host:/music".into(),
         destination: None,
         destinations: Vec::new(),
         staging_kept_at: None,

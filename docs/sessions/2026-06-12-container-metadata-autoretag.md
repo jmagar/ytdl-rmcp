@@ -1,10 +1,10 @@
 ---
 date: 2026-06-12 21:55:53 EDT
-repo: git@github.com:jmagar/ytdl-mcp.git
+repo: git@github.com:jmagar/ytdl-rmcp.git
 branch: codex/metadata-playlist-sync
 head: fb15ce8
-working directory: /home/jmagar/workspace/ytdl-mcp
-worktree: /home/jmagar/workspace/ytdl-mcp fb15ce8 [codex/metadata-playlist-sync]
+working directory: /home/jmagar/workspace/ytdl-rmcp
+worktree: /home/jmagar/workspace/ytdl-rmcp fb15ce8 [codex/metadata-playlist-sync]
 ---
 
 # Container metadata autoretag session
@@ -17,15 +17,15 @@ metadata when possible.
 
 ## Session Overview
 
-This session containerized `ytdl-mcp`, deployed it to tootie under
-`/mnt/cache/compose/ytdl-mcp`, repaired metadata for the existing yt-dlp music
+This session containerized `ytdl-rmcp`, deployed it to tootie under
+`/mnt/cache/compose/ytdl-rmcp`, repaired metadata for the existing yt-dlp music
 library, added automatic high-confidence AcoustID/MusicBrainz retagging after
 future audio downloads, and bumped the project version from `0.6.0` to `0.7.0`.
 
 ## Sequence of Events
 
 1. Built and deployed a Docker Compose stack on tootie using the local
-   `ytdl-mcp:local` image, with `/library`, `/state`, and `/cache` mounts.
+   `ytdl-rmcp:local` image, with `/library`, `/state`, and `/cache` mounts.
 2. Ran `youtube_identify` against the existing `/library` contents through
    `mcporter` and wrote high-confidence MusicBrainz tags to 103 of 118 files.
 3. Found that `fpcalc` can print valid fingerprints while exiting nonzero with
@@ -45,7 +45,7 @@ future audio downloads, and bumped the project version from `0.6.0` to `0.7.0`.
 
 ## Key Findings
 
-- The deployed stdio wrapper is `/mnt/cache/compose/ytdl-mcp/mcp-stdio.sh`, and
+- The deployed stdio wrapper is `/mnt/cache/compose/ytdl-rmcp/mcp-stdio.sh`, and
   `mcporter` can list and call the server through it.
 - The tootie yt-dlp music library has 118 audio files, and the Plex playlist
   `yt-dlp Downloads` also reports 118 items.
@@ -123,7 +123,7 @@ No beads were created, edited, or closed during this session.
 ### Worktrees and branches
 
 `git worktree list --porcelain` showed one worktree:
-`/home/jmagar/workspace/ytdl-mcp` on `codex/metadata-playlist-sync`. No branch
+`/home/jmagar/workspace/ytdl-rmcp` on `codex/metadata-playlist-sync`. No branch
 or worktree cleanup was performed.
 
 ### Stale docs
@@ -149,15 +149,15 @@ download retagging.
 
 | command | result |
 | --- | --- |
-| `docker build -t ytdl-mcp:local .` | Built the local container image. |
-| `docker save ytdl-mcp:local \| gzip \| ssh tootie 'gunzip \| docker load'` | Loaded rebuilt images on tootie. |
-| `ssh tootie 'cd /mnt/cache/compose/ytdl-mcp && docker compose up -d --force-recreate'` | Recreated the deployed container. |
-| `mcporter list --stdio ssh --stdio-arg tootie --stdio-arg /mnt/cache/compose/ytdl-mcp/mcp-stdio.sh --schema --json` | MCP schema listed successfully. |
-| `mcporter call --stdio ssh --stdio-arg tootie --stdio-arg /mnt/cache/compose/ytdl-mcp/mcp-stdio.sh youtube_stats limit:1 response_format:json` | Deployed MCP call succeeded. |
+| `docker build -t ytdl-rmcp:local .` | Built the local container image. |
+| `docker save ytdl-rmcp:local \| gzip \| ssh tootie 'gunzip \| docker load'` | Loaded rebuilt images on tootie. |
+| `ssh tootie 'cd /mnt/cache/compose/ytdl-rmcp && docker compose up -d --force-recreate'` | Recreated the deployed container. |
+| `mcporter list --stdio ssh --stdio-arg tootie --stdio-arg /mnt/cache/compose/ytdl-rmcp/mcp-stdio.sh --schema --json` | MCP schema listed successfully. |
+| `mcporter call --stdio ssh --stdio-arg tootie --stdio-arg /mnt/cache/compose/ytdl-rmcp/mcp-stdio.sh youtube_stats limit:1 response_format:json` | Deployed MCP call succeeded. |
 | `cargo fmt --all --check` | Passed. |
 | `cargo test` | Passed, 75 tests. |
 | `cargo clippy --all-targets -- -D warnings` | Passed. |
-| `cargo check` | Passed and confirmed `ytdl-mcp v0.7.0`. |
+| `cargo check` | Passed and confirmed `ytdl-rmcp v0.7.0`. |
 
 ## Errors Encountered
 
@@ -174,7 +174,7 @@ download retagging.
 
 | area | before | after |
 | --- | --- | --- |
-| Container deployment | No Compose stack for ytdl-mcp on tootie. | Compose stack runs at `/mnt/cache/compose/ytdl-mcp`. |
+| Container deployment | No Compose stack for ytdl-rmcp on tootie. | Compose stack runs at `/mnt/cache/compose/ytdl-rmcp`. |
 | Existing metadata | yt-dlp library relied mostly on YouTube-derived tags. | 103 of 118 files have MusicBrainz/AcoustID-backed tags. |
 | Future downloads | MusicBrainz retagging required an explicit `youtube_identify` call. | `youtube_download` auto-retags downloaded audio before transfer when AcoustID is configured. |
 | fpcalc warnings | Nonzero `fpcalc` status blocked otherwise valid fingerprints. | Valid `DURATION` and `FINGERPRINT` stdout is accepted. |
@@ -187,8 +187,8 @@ download retagging.
 | `cargo fmt --all --check` | Formatting clean. | Passed. | pass |
 | `cargo test` | All tests pass. | 75 passed. | pass |
 | `cargo clippy --all-targets -- -D warnings` | No clippy warnings. | Passed. | pass |
-| `cargo check` | Version bump compiles. | Checked `ytdl-mcp v0.7.0`. | pass |
-| `docker run --rm ytdl-mcp:local --version` | Container binary starts. | Verified during container work. | pass |
+| `cargo check` | Version bump compiles. | Checked `ytdl-rmcp v0.7.0`. | pass |
+| `docker run --rm ytdl-rmcp:local --version` | Container binary starts. | Verified during container work. | pass |
 | `mcporter list ... --schema --json` | Deployed MCP server responds. | Status `ok`, 6 tools. | pass |
 | Plex playlist count | Playlist should match library count. | `yt-dlp Downloads` and filesystem both reported 118. | pass |
 
@@ -199,7 +199,7 @@ download retagging.
 - Tag writes are best-effort, but they do mutate audio files. Existing files
   already retagged on tootie would need restore from backups or re-downloads for
   a full metadata rollback.
-- The deployed Compose stack currently uses the locally loaded `ytdl-mcp:local`
+- The deployed Compose stack currently uses the locally loaded `ytdl-rmcp:local`
   image until the GHCR workflow publishes from `main`.
 
 ## Decisions Not Taken
@@ -214,12 +214,12 @@ download retagging.
 
 - MusicBrainz API: https://musicbrainz.org/doc/MusicBrainz_API
 - AcoustID web service: https://acoustid.org/webservice
-- Deployed Compose path: `/mnt/cache/compose/ytdl-mcp`
+- Deployed Compose path: `/mnt/cache/compose/ytdl-rmcp`
 
 ## Open Questions
 
-- Whether to switch tootie Compose from `ytdl-mcp:local` to
-  `ghcr.io/jmagar/ytdl-mcp:main` after the main-branch workflow publishes.
+- Whether to switch tootie Compose from `ytdl-rmcp:local` to
+  `ghcr.io/jmagar/ytdl-rmcp:main` after the main-branch workflow publishes.
 
 ## Next Steps
 

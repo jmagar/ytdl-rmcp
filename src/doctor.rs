@@ -1,4 +1,4 @@
-//! `ytdl-mcp doctor` — a human-readable diagnostic report for triaging a broken
+//! `ytdl-rmcp doctor` — a human-readable diagnostic report for triaging a broken
 //! install ("my plugin's MCP server is dead").
 //!
 //! Unlike the stdio server, this is a plain CLI command: it is **not** the
@@ -22,7 +22,7 @@ use crate::config::Config;
 /// a diagnostic that fails to diagnose is itself a failure, so we report
 /// problems in-band rather than via a non-zero exit / error.
 pub async fn run() -> Result<()> {
-    println!("ytdl-mcp doctor");
+    println!("ytdl-rmcp doctor");
     println!("===============");
     println!();
 
@@ -88,14 +88,13 @@ fn report_config() {
         }
     };
 
-    println!("  remote (YTDLP_REMOTE):         {}", presence(&cfg.remote));
     println!(
-        "  audio dest (YTDLP_REMOTE_PATH):  {}",
-        presence(&cfg.dest_path)
+        "  target path (YTDLP_TARGET_PATH):  {}",
+        presence(&cfg.target_path)
     );
     println!(
-        "  video dest (YTDLP_VIDEO_REMOTE_PATH):  {}",
-        presence(&cfg.video_dest_path)
+        "  video target (YTDLP_VIDEO_TARGET_PATH):  {}",
+        presence(&cfg.video_target_path)
     );
     println!(
         "  staging dir (YTDLP_STAGING_DIR):  {}",

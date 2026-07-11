@@ -42,12 +42,26 @@ jobs:
       - name: Validate plugin packaging
         run: REQUIRE_SHELLCHECK=1 scripts/check-packaging.sh
 
+  npm-launcher:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Test npm launcher
+        run: npm test --prefix packages/ytdl-rmcp
+      - name: Check npm launcher syntax
+        run: npm run check --prefix packages/ytdl-rmcp
+      - name: Dry-run npm package
+        run: npm pack --dry-run --json ./packages/ytdl-rmcp
+
   container:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Build container image
-        run: docker build -t ytdl-mcp:ci .
+        run: docker build -t ytdl-rmcp:ci .
 
   cross-build:
     # Smoke-build the Windows target so cross-compile breakage is caught in CI,
@@ -86,10 +100,10 @@ jobs:
       - name: Smoke - binary starts and prints version
         shell: pwsh
         run: |
-          $exe = "target/release/ytdl-mcp.exe"
+          $exe = "target/release/rytdl.exe"
           $version = & $exe --version
           if ($LASTEXITCODE -ne 0) {
-            Write-Error "ytdl-mcp.exe --version exited with $LASTEXITCODE"
+            Write-Error "rytdl.exe --version exited with $LASTEXITCODE"
             exit 1
           }
           Write-Host "smoke ok: $version"

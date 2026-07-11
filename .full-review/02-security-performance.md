@@ -39,7 +39,7 @@ No new Security or Performance findings were identified in the current checkout.
   Impact: locked-down users can require known executable bytes instead of trusting moving upstream assets.
 
 - Resolved - `scripts/fetch-binary.sh:303`
-  Claude plugin release downloads require published checksums by default and only allow missing checksums when `YTDL_MCP_ALLOW_MISSING_CHECKSUM=1`.
+  Claude plugin release downloads require published checksums by default and only allow missing checksums when `YTDL_RMCP_ALLOW_MISSING_CHECKSUM=1`.
   Impact: the plugin install path fails closed for current releases.
 
 ## Residual Risks

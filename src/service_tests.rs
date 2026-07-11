@@ -10,9 +10,9 @@ use crate::model::{AudioFormat, DownloadMode, ResponseFormat, SearchInput, Urls,
 
 fn test_config() -> Config {
     Config {
-        remote: None,
-        dest_path: None,
-        video_dest_path: None,
+        target_path: None,
+        video_target_path: None,
+        allow_local_targets: false,
         staging_dir: None,
         audio_format: "mp3".into(),
         ssh_opts: vec![],
@@ -46,6 +46,8 @@ fn download_input(urls: Urls) -> DownloadInput {
         audio_quality: "0".into(),
         max_height: None,
         container: VideoContainer::Mp4,
+        target_path: None,
+        video_target_path: None,
         remote: None,
         dest_path: None,
         video_dest_path: None,
@@ -87,9 +89,8 @@ async fn run_download_json_appends_history_entry_with_destination_and_files() {
 
     let input = DownloadInput {
         mode: DownloadMode::Video,
-        remote: Some("media".into()),
-        dest_path: Some("/audio".into()),
-        video_dest_path: Some("/video".into()),
+        target_path: Some("media:/audio".into()),
+        video_target_path: Some("media:/video".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One(
             "https://www.youtube.com/watch?v=abc123&list=RDfake".into(),
@@ -109,7 +110,7 @@ async fn run_download_json_appends_history_entry_with_destination_and_files() {
 
     assert!(entry["timestamp"].as_str().unwrap().contains('T'));
     assert_eq!(entry["mode"], "video");
-    assert_eq!(entry["remote"], "media");
+    assert_eq!(entry["target_path"], "media:/video");
     assert_eq!(entry["transferred"], true);
     assert_eq!(entry["total_files"], 1);
     assert_eq!(entry["destinations"][0]["kind"], "video");
@@ -151,9 +152,8 @@ async fn run_download_completes_on_single_threaded_runtime() {
 
     let input = DownloadInput {
         mode: DownloadMode::Video,
-        remote: Some("media".into()),
-        dest_path: Some("/audio".into()),
-        video_dest_path: Some("/video".into()),
+        target_path: Some("media:/audio".into()),
+        video_target_path: Some("media:/video".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One("https://www.youtube.com/watch?v=abc123".into()))
     };
@@ -194,9 +194,8 @@ async fn run_download_json_reports_history_error_without_failing_download() {
 
     let input = DownloadInput {
         mode: DownloadMode::Video,
-        remote: Some("media".into()),
-        dest_path: Some("/audio".into()),
-        video_dest_path: Some("/video".into()),
+        target_path: Some("media:/audio".into()),
+        video_target_path: Some("media:/video".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One("https://www.youtube.com/watch?v=abc123".into()))
     };
@@ -277,8 +276,7 @@ async fn invalid_transfer_target_is_rejected_before_tool_resolution() {
     cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
 
     let input = DownloadInput {
-        remote: Some("-bad".into()),
-        dest_path: Some("/music".into()),
+        target_path: Some("-bad:/music".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One("https://example.test/watch".into()))
     };
@@ -291,6 +289,134 @@ async fn invalid_transfer_target_is_rejected_before_tool_resolution() {
     assert!(err.contains("SSH remote must not start with '-'"));
     assert!(!err.contains("YTDLP_PATH"));
     assert!(!err.contains("FFMPEG_PATH"));
+}
+
+#[tokio::test]
+async fn local_transfer_target_requires_explicit_opt_in_before_tool_resolution() {
+    let mut cfg = test_config();
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        target_path: Some("/tmp/ytdl-local".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("YTDLP_ALLOW_LOCAL_TARGETS=true"));
+    assert!(!err.contains("YTDLP_PATH"));
+    assert!(!err.contains("FFMPEG_PATH"));
+}
+
+#[tokio::test]
+async fn configured_local_transfer_target_requires_explicit_opt_in_before_tool_resolution() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("/tmp/ytdl-local".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("YTDLP_ALLOW_LOCAL_TARGETS=true"));
+    assert!(!err.contains("YTDLP_PATH"));
+    assert!(!err.contains("FFMPEG_PATH"));
+}
+
+#[tokio::test]
+async fn legacy_remote_and_dest_path_inputs_still_resolve_to_ssh_target() {
+    let mut cfg = test_config();
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        remote: Some("nas".into()),
+        dest_path: Some("/music".into()),
+        video_dest_path: Some("/videos".into()),
+        mode: DownloadMode::Video,
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("YTDLP_PATH"));
+    assert!(!err.contains("No target path"));
+    assert!(!err.contains("Local target paths are disabled"));
+}
+
+#[tokio::test]
+async fn legacy_one_sided_overrides_compose_with_configured_ssh_target() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("ssh:nas:/music".into());
+    cfg.video_target_path = Some("ssh:nas:/videos".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let dest_only = DownloadInput {
+        dest_path: Some("/other-music".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+    let err = run_download(&Arc::new(cfg.clone()), &ToolsCache::default(), dest_only)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("YTDLP_PATH"));
+    assert!(!err.contains("No target path"));
+    assert!(!err.contains("rclone"));
+
+    let remote_only = DownloadInput {
+        remote: Some("backup-nas".into()),
+        video_dest_path: Some("/other-videos".into()),
+        mode: DownloadMode::Video,
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), remote_only)
+        .await
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("YTDLP_PATH"));
+    assert!(!err.contains("No target path"));
+    assert!(!err.contains("rclone"));
+}
+
+#[tokio::test]
+async fn legacy_relative_dest_path_is_not_reclassified_as_rclone() {
+    let mut cfg = test_config();
+    cfg.target_path = Some("ssh:nas:/music".into());
+    cfg.ytdlp_path = Some("/definitely/not/a/yt-dlp".into());
+    cfg.ffmpeg_path = Some("/definitely/not/a/ffmpeg".into());
+
+    let input = DownloadInput {
+        dest_path: Some("relative-music".into()),
+        response_format: ResponseFormat::Json,
+        ..download_input(Urls::One("https://example.test/watch".into()))
+    };
+
+    let err = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("ssh target must be in ssh:host:/path form"));
+    assert!(!err.contains("YTDLP_PATH"));
 }
 
 #[tokio::test]
@@ -314,9 +440,8 @@ async fn run_download_json_reports_partial_status_with_fake_runtime() {
     let input = DownloadInput {
         mode: DownloadMode::Both,
         audio_format: Some(AudioFormat::Mp3),
-        remote: Some("media".into()),
-        dest_path: Some("/audio".into()),
-        video_dest_path: Some("/video".into()),
+        target_path: Some("media:/audio".into()),
+        video_target_path: Some("media:/video".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One("https://example.test/watch".into()))
     };
@@ -358,9 +483,8 @@ async fn run_download_json_retains_staging_when_transfer_fails() {
 
     let input = DownloadInput {
         mode: DownloadMode::Video,
-        remote: Some("media".into()),
-        dest_path: Some("/audio".into()),
-        video_dest_path: Some("/video".into()),
+        target_path: Some("media:/audio".into()),
+        video_target_path: Some("media:/video".into()),
         response_format: ResponseFormat::Json,
         ..download_input(Urls::One("https://www.youtube.com/watch?v=abc123".into()))
     };

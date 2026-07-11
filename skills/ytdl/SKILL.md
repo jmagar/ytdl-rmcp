@@ -1,21 +1,21 @@
 ---
 name: ytdl
-description: Download audio or video from YouTube, Vimeo, or any yt-dlp-supported site and transfer it to a configured SSH remote. Use when the user wants to grab/download/save/rip a song, video, album, playlist, or channel from a URL, pull audio off a YouTube link, or archive media to their server. Triggers on "download this", "grab the audio", "rip this playlist", "save this video", or any media URL the user wants pulled.
+description: Download audio or video from YouTube, Vimeo, or any yt-dlp-supported site and transfer it to a configured local, SSH, or rclone target. Use when the user wants to grab/download/save/rip a song, video, album, playlist, or channel from a URL, pull audio off a YouTube link, or archive media to their server. Triggers on "download this", "grab the audio", "rip this playlist", "save this video", or any media URL the user wants pulled.
 ---
 
 # yt-dlp Downloader
 
 Download media from any [yt-dlp](https://github.com/yt-dlp/yt-dlp)-supported site as
 audio, video, or both, embed proper metadata + cover art, and transfer the result
-to an SSH remote configured when the plugin was enabled.
+to a target path configured when the plugin was enabled.
 
-Six MCP tools are provided by the bundled `ytdl-mcp` server:
+Six MCP tools are provided by the bundled `ytdl-rmcp` server:
 
 | Tool | Purpose |
 | --- | --- |
 | `youtube_search` | Search YouTube and return result URLs without downloading. |
 | `youtube_search_ui` | Open an interactive YouTube search UI in MCP App-capable hosts. |
-| `youtube_download` | Download one or more URLs and transfer them to the remote with rsync or scp. |
+| `youtube_download` | Download one or more URLs and transfer them to the configured target. |
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
 | `youtube_identify` | Fingerprint local audio with `fpcalc`, return AcoustID/MusicBrainz candidates, preview canonical tags, and optionally write high-confidence tags. |
 | `youtube_stats` | Summarize the persistent download ledger with totals, kinds, uploaders, and recent entries. |
@@ -24,9 +24,10 @@ Six MCP tools are provided by the bundled `ytdl-mcp` server:
 
 - **Audio-first.** `mode` defaults to `audio`, codec defaults to the configured
   `audio_format` (mp3 unless changed at enable time).
-- **Destinations come from plugin config.** Audio lands in the configured audio
-  destination, video in the video destination. You do not normally pass `remote`,
-  `dest_path`, or `video_dest_path` — they fall back to the user config.
+- **Destinations come from plugin config.** Audio lands in `target_path`, and
+  video lands in `video_target_path` when configured. Targets can be local
+  (`/path`), SSH (`host:/path`), or rclone (`remote:path` or `rclone:remote:/path`). You do not normally
+  pass target fields — they fall back to the user config.
 - **Files are organized by artist.** Output is `Artist/Title [id].ext`, with title,
   artist, album, date, and cover art embedded so media servers (Plex, etc.) index
   them cleanly.
@@ -149,8 +150,11 @@ the ledger append fails, with `history_error` included in JSON output.
 
 ## Requirements (on the host running this plugin)
 
-- **ssh** / openssh-client
-- Passwordless key-based SSH auth to the configured remote
-- **rsync** is optional; transfers fall back to **scp** when rsync is unavailable
+- For `host:/path` targets: **ssh** / openssh-client and passwordless key-based
+  SSH auth to the configured remote.
+- For `remote:path` or `rclone:remote:/path` targets: **rclone** on `PATH` with the named remote
+  configured.
+- **rsync** is optional; SSH transfers fall back to **scp** when rsync is
+  unavailable, and local transfers fall back to Rust filesystem copy.
 - yt-dlp and ffmpeg are auto-resolved/auto-downloaded unless overridden with
   `YTDLP_PATH` / `FFMPEG_PATH`

@@ -1,5 +1,7 @@
 use super::*;
 
+use std::ffi::OsString;
+
 #[test]
 fn remote_mkdir_command_quotes_shell_sensitive_paths() {
     // All inputs are valid absolute paths (a leading-dash path is rejected by
@@ -99,14 +101,122 @@ fn remote_accepts_common_ssh_aliases_and_user_hosts() {
 
 #[test]
 fn transfer_target_validates_all_boundaries_once() {
-    let target = TransferTarget::parse("nas", "/audio library", Some("/videos")).unwrap();
-    assert_eq!(target.remote().as_str(), "nas");
-    assert_eq!(target.audio_dest().as_str(), "/audio library");
-    assert_eq!(target.video_dest().as_str(), "/videos");
+    let target = TransferTarget::parse_targets("nas:/audio library", Some("nas:/videos")).unwrap();
+    match target.audio_target() {
+        TargetPath::Ssh { remote, path } => {
+            assert_eq!(remote.as_str(), "nas");
+            assert_eq!(path.as_str(), "/audio library");
+        }
+        other => panic!("expected ssh audio target, got {other:?}"),
+    }
+    match target.video_target() {
+        TargetPath::Ssh { remote, path } => {
+            assert_eq!(remote.as_str(), "nas");
+            assert_eq!(path.as_str(), "/videos");
+        }
+        other => panic!("expected ssh video target, got {other:?}"),
+    }
 
-    assert!(TransferTarget::parse("-bad", "/audio", None).is_err());
-    assert!(TransferTarget::parse("nas", "   ", None).is_err());
-    assert!(TransferTarget::parse("nas", "\n/audio", None).is_err());
+    assert!(TransferTarget::parse_targets("-bad:/audio", None).is_err());
+    assert!(TransferTarget::parse_targets("nas:   ", None).is_err());
+    assert!(TransferTarget::parse_targets("nas:\n/audio", None).is_err());
+}
+
+#[test]
+fn target_path_accepts_local_ssh_and_rclone_targets() {
+    assert!(matches!(
+        TargetPath::parse("/srv/music").unwrap(),
+        TargetPath::Local(_)
+    ));
+
+    match TargetPath::parse("dookie:/srv/music").unwrap() {
+        TargetPath::Ssh { remote, path } => {
+            assert_eq!(remote.as_str(), "dookie");
+            assert_eq!(path.as_str(), "/srv/music");
+        }
+        other => panic!("expected ssh target, got {other:?}"),
+    }
+
+    match TargetPath::parse("gdrive:music/ytdl").unwrap() {
+        TargetPath::Rclone(target) => assert_eq!(target.as_str(), "gdrive:music/ytdl"),
+        other => panic!("expected rclone target, got {other:?}"),
+    }
+
+    match TargetPath::parse("rclone:gdrive:/Music/ytdl").unwrap() {
+        TargetPath::Rclone(target) => assert_eq!(target.as_str(), "gdrive:/Music/ytdl"),
+        other => panic!("expected explicit rclone target, got {other:?}"),
+    }
+
+    match TargetPath::parse("ssh:dookie:/srv/music").unwrap() {
+        TargetPath::Ssh { remote, path } => {
+            assert_eq!(remote.as_str(), "dookie");
+            assert_eq!(path.as_str(), "/srv/music");
+        }
+        other => panic!("expected explicit ssh target, got {other:?}"),
+    }
+}
+
+#[test]
+fn explicit_absolute_rclone_target_display_keeps_disambiguating_prefix() {
+    assert_eq!(
+        TargetPath::parse("rclone:gdrive:/Music/ytdl")
+            .unwrap()
+            .display(),
+        "rclone:gdrive:/Music/ytdl"
+    );
+    assert_eq!(
+        TargetPath::parse("gdrive:Music/ytdl").unwrap().display(),
+        "gdrive:Music/ytdl"
+    );
+}
+
+#[test]
+fn target_path_does_not_treat_windows_drive_paths_as_remotes() {
+    #[cfg(windows)]
+    {
+        match TargetPath::parse("C:/Users/Jacob/Music").unwrap() {
+            TargetPath::Local(path) => assert_eq!(path.as_str(), "C:/Users/Jacob/Music"),
+            other => panic!("expected local target, got {other:?}"),
+        }
+    }
+
+    #[cfg(not(windows))]
+    assert!(TargetPath::parse("C:/Users/Jacob/Music").is_err());
+}
+
+#[test]
+fn target_path_rejects_unsafe_targets() {
+    assert!(TargetPath::parse("").is_err());
+    assert!(TargetPath::parse("relative/path").is_err());
+    assert!(TargetPath::parse("/music/../etc").is_err());
+    assert!(
+        TargetPath::parse("dookie:relative").is_ok(),
+        "rclone targets may be relative to a remote"
+    );
+    assert!(TargetPath::parse("dookie:/music/../etc").is_err());
+    assert!(TargetPath::parse("rclone:gdrive:music/../etc").is_err());
+    assert!(TargetPath::parse("-bad:/music").is_err());
+    assert!(TargetPath::parse("remote:\npath").is_err());
+}
+
+#[test]
+fn target_set_uses_video_target_or_falls_back_to_audio_target() {
+    let target = TransferTarget::parse_targets("/audio", Some("remote:videos")).unwrap();
+    assert_eq!(target.audio_target().display(), "/audio");
+    assert_eq!(target.video_target().display(), "remote:videos");
+
+    let target = TransferTarget::parse_targets("dookie:/audio", None).unwrap();
+    assert_eq!(target.audio_target().display(), "dookie:/audio");
+    assert_eq!(target.video_target().display(), "dookie:/audio");
+}
+
+#[test]
+fn target_set_reports_whether_local_paths_are_present() {
+    let local = TransferTarget::parse_targets("/audio", Some("remote:videos")).unwrap();
+    assert!(local.contains_local());
+
+    let remote = TransferTarget::parse_targets("dookie:/audio", Some("remote:videos")).unwrap();
+    assert!(!remote.contains_local());
 }
 
 #[test]
@@ -162,4 +272,67 @@ async fn dropped_transfer_command_kills_child_process() {
         !alive.success(),
         "timed-out transfer command left child process {pid} alive"
     );
+}
+
+#[test]
+fn rclone_target_builds_copy_args() {
+    let target = TargetPath::parse("gdrive:music/ytdl").unwrap();
+    let TargetPath::Rclone(target) = target else {
+        panic!("expected rclone target");
+    };
+
+    let args = rclone_copy_args(Path::new("/tmp/staging"), &target);
+    assert_eq!(
+        args,
+        vec![
+            OsString::from("copy"),
+            OsString::from("/tmp/staging"),
+            OsString::from("gdrive:music/ytdl"),
+            OsString::from("--create-empty-src-dirs"),
+        ]
+    );
+}
+
+#[tokio::test]
+async fn local_copy_rejects_destination_inside_source() {
+    let root = tempfile::tempdir().unwrap();
+    let src = root.path().join("src");
+    let nested_dest = src.join("nested");
+    tokio::fs::create_dir_all(&src).await.unwrap();
+    tokio::fs::write(src.join("song.mp3"), b"audio")
+        .await
+        .unwrap();
+
+    let err = copy_dir_contents(&src, &nested_dest)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("must not be inside source"));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn local_copy_rejects_symlinks() {
+    use std::os::unix::fs::symlink;
+
+    let root = tempfile::tempdir().unwrap();
+    let src = root.path().join("src");
+    let dest = root.path().join("dest");
+    tokio::fs::create_dir_all(&src).await.unwrap();
+    tokio::fs::write(root.path().join("outside.mp3"), b"audio")
+        .await
+        .unwrap();
+    symlink(
+        root.path().join("outside.mp3"),
+        src.join("outside-link.mp3"),
+    )
+    .unwrap();
+
+    let err = copy_dir_contents(&src, &dest)
+        .await
+        .unwrap_err()
+        .to_string();
+
+    assert!(err.contains("refuses to follow symlink"));
 }

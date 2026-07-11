@@ -17,7 +17,10 @@
 .worktrees/
 *.part
 *.ytdl
+packages/ytdl-rmcp/vendor/
 
 # Built MCP bundle (produced by scripts/build-mcpb.sh)
 *.mcpb
 *.mcpb.sha256
+*.dxt
+*.dxt.sha256

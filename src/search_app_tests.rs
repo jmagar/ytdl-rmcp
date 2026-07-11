@@ -2,7 +2,7 @@ use rmcp::model::ResourceContents;
 
 #[test]
 fn app_resource_uri_is_stable() {
-    assert_eq!(super::RESOURCE_URI, "ui://ytdl-mcp/youtube-search.html");
+    assert_eq!(super::RESOURCE_URI, "ui://ytdl-rmcp/youtube-search.html");
 }
 
 #[test]

@@ -1,28 +1,44 @@
 {
-  "name": "ytdl-mcp",
-  "version": "0.7.0",
-  "description": "Download audio/video from any yt-dlp-supported site, tag it, and transfer it to an SSH remote with rsync or scp.",
+  "name": "ytdl-rmcp",
+  "version": "1.0.0",
+  "description": "Download audio/video from any yt-dlp-supported site, tag it, and transfer it to local, SSH, or rclone targets.",
   "mcpServers": {
-    "ytdl-mcp": {
-      "command": "ytdl-mcp",
+    "ytdl-rmcp": {
+      "command": "ytdl-rmcp",
       "args": []
     }
   },
   "settings": [
     {
-      "name": "SSH remote",
-      "description": "SSH alias or user@host to transfer downloads to (passwordless key auth).",
+      "name": "Target path",
+      "description": "Destination for audio downloads. Use /path for local, host:/path or ssh:host:/path for SSH, and remote:path or rclone:remote:path for rclone.",
+      "envVar": "YTDLP_TARGET_PATH"
+    },
+    {
+      "name": "Video target path",
+      "description": "Destination for video downloads. Same forms as target path. Blank = same as target path.",
+      "envVar": "YTDLP_VIDEO_TARGET_PATH"
+    },
+    {
+      "name": "Deprecated SSH remote",
+      "description": "Deprecated compatibility alias. Legacy SSH remote alias or user@host; combines with audio/video destination paths. Prefer YTDLP_TARGET_PATH.",
       "envVar": "YTDLP_REMOTE"
     },
     {
-      "name": "Audio destination",
-      "description": "Absolute remote directory for audio downloads.",
+      "name": "Deprecated audio SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for audio downloads. Prefer YTDLP_TARGET_PATH.",
       "envVar": "YTDLP_REMOTE_PATH"
     },
     {
-      "name": "Video destination",
-      "description": "Absolute remote directory for video downloads (blank = same as audio).",
+      "name": "Deprecated video SSH path",
+      "description": "Deprecated compatibility alias. Legacy absolute SSH path for video downloads. Prefer YTDLP_VIDEO_TARGET_PATH.",
       "envVar": "YTDLP_VIDEO_REMOTE_PATH"
+    },
+    {
+      "name": "Allow local targets",
+      "description": "Permit /path local filesystem destinations. Keep disabled unless you trust MCP callers to choose local write locations. Default: false.",
+      "envVar": "YTDLP_ALLOW_LOCAL_TARGETS",
+      "default": "false"
     },
     {
       "name": "Default audio codec",
@@ -78,8 +94,9 @@
     },
     {
       "name": "yt-dlp extractor args",
-      "description": "Passed to yt-dlp's --extractor-args, e.g. youtube:player_client=android. Optional.",
-      "envVar": "YTDLP_EXTRACTOR_ARGS"
+      "description": "Passed to yt-dlp's --extractor-args. The Android YouTube client keeps search/probe working for official music videos that reject yt-dlp's default clients.",
+      "envVar": "YTDLP_EXTRACTOR_ARGS",
+      "default": "youtube:player_client=android"
     },
     {
       "name": "yt-dlp timeout seconds",

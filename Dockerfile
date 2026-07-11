@@ -17,10 +17,10 @@ FROM debian:bookworm-slim@sha256:96e378d7e6531ac9a15ad505478fcc2e69f371b10f5cdf8
 # org.opencontainers.image.* labels (revision, created, etc.) and passes them to
 # build-push-action; these static defaults cover local/manual builds.
 ARG VCS_REF=unknown
-LABEL org.opencontainers.image.title="ytdl-mcp" \
-      org.opencontainers.image.description="Cross-platform single-binary MCP server: downloads media with yt-dlp, embeds metadata + cover art, organizes by artist, and rsync/scp's to an SSH remote." \
-      org.opencontainers.image.source="https://github.com/jmagar/ytdl-mcp" \
-      org.opencontainers.image.url="https://github.com/jmagar/ytdl-mcp" \
+LABEL org.opencontainers.image.title="ytdl-rmcp" \
+      org.opencontainers.image.description="Cross-platform single-binary MCP server: downloads media with yt-dlp, embeds metadata + cover art, organizes by artist, and transfers to local, SSH, or rclone targets." \
+      org.opencontainers.image.source="https://github.com/jmagar/ytdl-rmcp" \
+      org.opencontainers.image.url="https://github.com/jmagar/ytdl-rmcp" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.revision="${VCS_REF}"
 
@@ -30,33 +30,34 @@ RUN apt-get update \
         ffmpeg \
         libchromaprint-tools \
         openssh-client \
+        rclone \
         rsync \
     && rm -rf /var/lib/apt/lists/*
 
 RUN useradd --create-home --shell /usr/sbin/nologin --uid 10001 ytdl
 
-COPY --from=builder /app/target/release/ytdl-mcp /usr/local/bin/ytdl-mcp
+COPY --from=builder /app/target/release/rytdl /usr/local/bin/ytdl-rmcp
 
 # Use the ffmpeg baked in via apt instead of auto-downloading at runtime (cd-m3):
 # removes the second ffmpeg provenance path and a runtime network dependency.
 # yt-dlp is intentionally NOT installed in the image; it bootstraps at runtime.
 ENV HOME=/home/ytdl \
-    YTDLP_STAGING_DIR=/tmp/ytdl-mcp \
+    YTDLP_STAGING_DIR=/tmp/ytdl-rmcp \
     FPCALC_PATH=/usr/bin/fpcalc \
     FFMPEG_PATH=/usr/bin/ffmpeg
 
-RUN mkdir -p /tmp/ytdl-mcp /home/ytdl/.local/state/ytdl-mcp /home/ytdl/.cache \
-    && chown -R ytdl:ytdl /tmp/ytdl-mcp /home/ytdl
+RUN mkdir -p /tmp/ytdl-rmcp /home/ytdl/.local/state/ytdl-rmcp /home/ytdl/.cache \
+    && chown -R ytdl:ytdl /tmp/ytdl-rmcp /home/ytdl
 
 USER ytdl
 WORKDIR /work
 
-VOLUME ["/library", "/home/ytdl/.ssh", "/home/ytdl/.local/state/ytdl-mcp", "/home/ytdl/.cache"]
+VOLUME ["/library", "/home/ytdl/.ssh", "/home/ytdl/.local/state/ytdl-rmcp", "/home/ytdl/.cache"]
 
 # Liveness check: the binary answers --version fast and exits 0 without starting
 # the stdio server, so it never interferes with the MCP transport (cd-m3).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD ["ytdl-mcp", "--version"]
+    CMD ["ytdl-rmcp", "--version"]
 
-ENTRYPOINT ["ytdl-mcp"]
+ENTRYPOINT ["ytdl-rmcp"]
 CMD ["serve"]

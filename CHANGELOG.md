@@ -5,7 +5,27 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0](https://github.com/jmagar/ytdl-rmcp/compare/v0.7.1...v1.0.0) (2026-07-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* unify transfer targets
+
+### Added
+
+* unify transfer targets ([4cc891e](https://github.com/jmagar/ytdl-rmcp/commit/4cc891e8e82d2621eb123dbbc6f161547b96de5f))
+
+
+### Fixed
+
+* align ytdl build workflows with rytdl binary ([f3377b5](https://github.com/jmagar/ytdl-rmcp/commit/f3377b55b1d71d3266aa8ce569274463971cbd79))
+* align ytdl npm launcher assets ([e1b392c](https://github.com/jmagar/ytdl-rmcp/commit/e1b392c2e69f332e5beecf12b45d95dc62337840))
+* harden target path migration ([c0af9e7](https://github.com/jmagar/ytdl-rmcp/commit/c0af9e7fcad01d04670e56139b83b740e2ed8094))
+
 ## [Unreleased]
+
+## [1.0.0] - 2026-07-11
 
 ### Security
 
@@ -16,13 +36,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `ytdl-mcp doctor` subcommand: a read-only diagnostic report (version, git SHA,
+- `YTDLP_TARGET_PATH` / `YTDLP_VIDEO_TARGET_PATH` destination model, supporting
+  local paths, SSH targets, and rclone targets from one setting.
+- Optional `YTDLP_ALLOW_LOCAL_TARGETS` guard for per-call local filesystem
+  destination overrides.
+- `ytdl-rmcp doctor` subcommand: a read-only diagnostic report (version, git SHA,
   platform, resolved tool paths, and redacted config presence) for triaging a
   broken install.
 - Embed the build's git SHA in `server_info`.
 
 ### Changed
 
+- Deprecated `YTDLP_REMOTE` + `YTDLP_REMOTE_PATH` and the matching per-call
+  `remote` / `dest_path` inputs in favor of target paths, while retaining
+  runtime compatibility for existing installs.
+- Download JSON/history now include `target_path` while retaining legacy SSH
+  destination fields during the transition.
 - Replace the download payload with a typed `DownloadPayload` plus a
   `DownloadStatus` enum, and the `urls` input with a validated `Urls` newtype.
 - Offload `youtube_identify` fingerprinting/lookups off the reactor so they do
@@ -72,5 +101,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   organization, YouTube mix/radio URL cleaning, and a `setup` installer that
   registers the server into Claude Code, Codex, and Gemini CLI.
 
-[Unreleased]: https://github.com/jmagar/ytdl-mcp/compare/v0.7.0...HEAD
-[0.7.0]: https://github.com/jmagar/ytdl-mcp/releases/tag/v0.7.0
+[Unreleased]: https://github.com/jmagar/ytdl-rmcp/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/jmagar/ytdl-rmcp/compare/v0.7.0...v1.0.0
+[0.7.0]: https://github.com/jmagar/ytdl-rmcp/releases/tag/v0.7.0

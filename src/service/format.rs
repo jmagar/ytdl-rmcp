@@ -11,26 +11,16 @@ use crate::model::SearchPayload;
 
 /// Typed source-of-truth for the `youtube_download` result payload.
 ///
-/// AH2 / Quality H1 / BP-M3: the download result used to be an untyped
-/// `serde_json::Value` built here, mutated by string key in `service.rs`, and
-/// read back by string key in `history.rs` — a renamed field compiled and
-/// silently yielded `null`/`0`. This struct is now the single schema: field
-/// renames are compile-checked across the builder, the markdown renderer, and
-/// the history ledger.
-///
-/// The JSON emitted to MCP clients (`response_format=json`) is byte-compatible
-/// with the previous hand-built `json!` map: the field order, key names, and
-/// `null`-vs-absent semantics below match it exactly. Core fields always
-/// serialize (matching the old map, where e.g. `transfer_error`/`destination`/
-/// `staging_kept_at` were always present as `null` when empty). The
-/// side-channel fields use `skip_serializing_if` so they only appear when set —
-/// matching the old `payload["key"] = ...` insert-only behavior in service.rs.
+/// `target_path` is the current destination contract. Deprecated `remote` and
+/// `dest_path` fields are retained as compatibility fields for SSH-shaped
+/// targets during the migration from `YTDLP_REMOTE` + `YTDLP_REMOTE_PATH`.
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct DownloadPayload {
     pub transferred: bool,
     pub transfer_error: Option<String>,
-    pub remote: String,
+    pub remote: Option<String>,
     pub dest_path: String,
+    pub target_path: String,
     pub destination: Option<String>,
     pub destinations: Vec<DownloadDestination>,
     pub staging_kept_at: Option<String>,
@@ -59,6 +49,7 @@ pub(crate) struct DownloadPayload {
 pub(crate) struct DownloadDestination {
     pub kind: String,
     pub dest_path: String,
+    pub target_path: String,
     pub destination: String,
 }
 
@@ -123,7 +114,6 @@ pub(crate) fn render_download(payload: &DownloadPayload, fmt: ResponseFormat) ->
 /// ledger; field renames are now compile-checked at every consumer.
 pub(crate) fn build_download_payload(
     results: &[ItemResult],
-    remote: &str,
     dests: &[(&str, &str)],
     transferred: bool,
     transfer_error: Option<String>,
@@ -166,13 +156,14 @@ pub(crate) fn build_download_payload(
         .filter(|r| r.error.is_some() && r.files.is_empty())
         .count();
     let primary = dests.first().map(|(_, d)| *d).unwrap_or("");
+    let (remote, dest_path) = legacy_remote_dest(primary);
     let destination: Option<String> = if dests.is_empty() {
         None
     } else {
         Some(
             dests
                 .iter()
-                .map(|(_, d)| format!("{remote}:{d}"))
+                .map(|(_, d)| (*d).to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
         )
@@ -180,15 +171,17 @@ pub(crate) fn build_download_payload(
     DownloadPayload {
         transferred,
         transfer_error,
-        remote: remote.to_string(),
-        dest_path: primary.to_string(),
+        remote,
+        dest_path,
+        target_path: primary.to_string(),
         destination,
         destinations: dests
             .iter()
             .map(|(kind, d)| DownloadDestination {
                 kind: (*kind).to_string(),
-                dest_path: (*d).to_string(),
-                destination: format!("{remote}:{d}"),
+                dest_path: legacy_remote_dest(d).1,
+                target_path: (*d).to_string(),
+                destination: (*d).to_string(),
             })
             .collect(),
         staging_kept_at: staging_kept.map(|p| p.display().to_string()),
@@ -205,12 +198,21 @@ pub(crate) fn build_download_payload(
     }
 }
 
+fn legacy_remote_dest(target: &str) -> (Option<String>, String) {
+    if target.starts_with("rclone:") {
+        return (None, target.to_string());
+    }
+    if let Some((remote, path)) = target.split_once(":/") {
+        return (Some(remote.to_string()), format!("/{path}"));
+    }
+    (None, target.to_string())
+}
+
 /// `Value` view of [`build_download_payload`], retained for tests that assert on
 /// the rendered JSON shape by key. Production code uses the typed builder.
 #[cfg(test)]
 pub(crate) fn download_payload(
     results: &[ItemResult],
-    remote: &str,
     dests: &[(&str, &str)],
     transferred: bool,
     transfer_error: Option<String>,
@@ -218,7 +220,6 @@ pub(crate) fn download_payload(
 ) -> serde_json::Value {
     serde_json::to_value(build_download_payload(
         results,
-        remote,
         dests,
         transferred,
         transfer_error,

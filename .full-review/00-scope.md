@@ -2,7 +2,7 @@
 
 ## Target
 
-Entire `/home/jmagar/workspace/ytdl-mcp` repository on `main`, refreshed from the existing completed `.full-review/` artifacts.
+Entire `/home/jmagar/workspace/ytdl-rmcp` repository on `main`, refreshed from the existing completed `.full-review/` artifacts.
 
 ## Files
 
@@ -52,4 +52,4 @@ This pass re-checked the current checkout against that claim and refreshed Phase
 - `scripts/check-packaging.sh` - passed.
 - `bash -n scripts/*.sh` plus JSON syntax checks for plugin/MCP/Gemini/hooks manifests - passed.
 - `cargo tree -i aws-lc-sys` - returned exit code 101 with "package ID specification `aws-lc-sys` did not match any packages"; this confirms the dependency is absent.
-- Live MCP stdio `youtube_download` smoke with fake yt-dlp/ffmpeg and real `ssh`/`rsync` to `tootie:/tmp/ytdl-mcp-live-smoke-1780864799` - passed; transferred and verified `Live Artist/Live Title [live123].mp3` at 17 bytes, then cleaned up the remote directory.
+- Live MCP stdio `youtube_download` smoke with fake yt-dlp/ffmpeg and real `ssh`/`rsync` to `tootie:/tmp/ytdl-rmcp-live-smoke-1780864799` - passed; transferred and verified `Live Artist/Live Title [live123].mp3` at 17 bytes, then cleaned up the remote directory.

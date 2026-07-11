@@ -1,18 +1,18 @@
 ---
 date: 2026-06-11 01:59:00 EST
-repo: git@github.com:jmagar/ytdl-mcp.git
+repo: git@github.com:jmagar/ytdl-rmcp.git
 branch: codex/youtube-search-mcp-ui
 head: 3c6f427
-working directory: /home/jmagar/workspace/ytdl-mcp/.worktrees/youtube-search-mcp-ui
-worktree: /home/jmagar/workspace/ytdl-mcp/.worktrees/youtube-search-mcp-ui
-pr: "#2 Add YouTube search MCP tool and UI (https://github.com/jmagar/ytdl-mcp/pull/2)"
+working directory: /home/jmagar/workspace/ytdl-rmcp/.worktrees/youtube-search-mcp-ui
+worktree: /home/jmagar/workspace/ytdl-rmcp/.worktrees/youtube-search-mcp-ui
+pr: "#2 Add YouTube search MCP tool and UI (https://github.com/jmagar/ytdl-rmcp/pull/2)"
 ---
 
 # YouTube search MCP tool and UI session
 
 ## User Request
 
-Add YouTube search support to `ytdl-mcp` as both a regular MCP tool and an MCP-UI/MCP App component, using Aurora design guidance. The user also asked that the feature remain a regular tool, and later asked to use `mcporter` for MCP smoke testing.
+Add YouTube search support to `ytdl-rmcp` as both a regular MCP tool and an MCP-UI/MCP App component, using Aurora design guidance. The user also asked that the feature remain a regular tool, and later asked to use `mcporter` for MCP smoke testing.
 
 ## Session Overview
 
@@ -20,9 +20,9 @@ Implemented `youtube_search` and `youtube_search_ui`, added an embedded Aurora-s
 
 ## Sequence of Events
 
-1. Created an isolated worktree at `/home/jmagar/workspace/ytdl-mcp/.worktrees/youtube-search-mcp-ui` on branch `codex/youtube-search-mcp-ui`.
+1. Created an isolated worktree at `/home/jmagar/workspace/ytdl-rmcp/.worktrees/youtube-search-mcp-ui` on branch `codex/youtube-search-mcp-ui`.
 2. Implemented YouTube search through `yt-dlp` using `ytsearchN:<query>`, added search input/output models, and exposed the regular `youtube_search` MCP tool.
-3. Added `youtube_search_ui` plus a resource at `ui://ytdl-mcp/youtube-search.html` with `text/html;profile=mcp-app`, Aurora styling, and controls for Probe, Audio, and Video actions.
+3. Added `youtube_search_ui` plus a resource at `ui://ytdl-rmcp/youtube-search.html` with `text/html;profile=mcp-app`, Aurora styling, and controls for Probe, Audio, and Video actions.
 4. Corrected MCP App metadata to nested `_meta.ui`, vendored the MCP Apps browser bridge into `assets/ext-apps-vendored.js`, and removed external `esm.sh` loading from the app.
 5. Ran review agents and PR toolkit passes, then fixed surfaced issues: UI tool errors no longer render as empty results, action responses are visible, parser output is stricter, raw yt-dlp IDs become YouTube watch URLs, and the UI tool advertises structured output schema.
 6. Verified locally with Rust tests, clippy, `mcporter`, Node syntax checks, and a headless Chrome screenshot; pushed PR #2.
@@ -82,7 +82,7 @@ Checked beads as described above. No beads existed in this repo/worktree, so no 
 
 ### Worktrees and branches
 
-`git worktree list --porcelain` showed the main checkout at `/home/jmagar/workspace/ytdl-mcp` on `main` and the active feature worktree at `.worktrees/youtube-search-mcp-ui` on `codex/youtube-search-mcp-ui`. No worktrees or branches were removed because the PR branch is active and unmerged.
+`git worktree list --porcelain` showed the main checkout at `/home/jmagar/workspace/ytdl-rmcp` on `main` and the active feature worktree at `.worktrees/youtube-search-mcp-ui` on `codex/youtube-search-mcp-ui`. No worktrees or branches were removed because the PR branch is active and unmerged.
 
 ### Stale docs
 
@@ -110,11 +110,11 @@ The main checkout branch `main` is ahead of `origin/main` by `8e986e2 chore: ign
 | `cargo fmt --all --check` | Passed. |
 | `cargo clippy --all-targets -- -D warnings` | Passed. |
 | `node --check /tmp/youtube-search-app-inline.js` | Embedded app script parsed successfully. |
-| `mcporter list --config /tmp/ytdl-mcporter-config.json ytdl-local --schema --json` | Listed `youtube_download`, `youtube_probe`, `youtube_search`, and `youtube_search_ui`. |
-| `mcporter call --config /tmp/ytdl-mcporter-config.json ytdl-local.youtube_search ...` | Returned fake YouTube search result URL. |
-| `mcporter resource --config /tmp/ytdl-mcporter-config.json ytdl-local ui://ytdl-mcp/youtube-search.html --output raw` | Resource contained `window.McpExtApps`, `text/html;profile=mcp-app`, and no `https://esm.sh`. |
+| `mcporter list --config /tmp/ytdl-rmcporter-config.json ytdl-local --schema --json` | Listed `youtube_download`, `youtube_probe`, `youtube_search`, and `youtube_search_ui`. |
+| `mcporter call --config /tmp/ytdl-rmcporter-config.json ytdl-local.youtube_search ...` | Returned fake YouTube search result URL. |
+| `mcporter resource --config /tmp/ytdl-rmcporter-config.json ytdl-local ui://ytdl-rmcp/youtube-search.html --output raw` | Resource contained `window.McpExtApps`, `text/html;profile=mcp-app`, and no `https://esm.sh`. |
 | `/usr/bin/google-chrome --headless=new --screenshot=docs/superpowers/artifacts/youtube-search-ui-render.png file:///tmp/youtube-search-app-expanded.html?demo` | Produced a nonblank UI screenshot. |
-| `gh pr checks 2 --repo jmagar/ytdl-mcp` | Earlier run passed; new run was pending at session-log write time after final push. |
+| `gh pr checks 2 --repo jmagar/ytdl-rmcp` | Earlier run passed; new run was pending at session-log write time after final push. |
 
 ## Errors Encountered
 
@@ -147,7 +147,7 @@ The main checkout branch `main` is ahead of `origin/main` by `8e986e2 chore: ign
 | `node --check /tmp/youtube-search-app-inline.js` | UI script parses. | Passed. | pass |
 | `mcporter list/call/resource` | Tools listed, search callable, UI resource readable. | Passed with fake yt-dlp and temp config. | pass |
 | Headless Chrome screenshot | Demo UI renders nonblank and framed. | Passed; screenshot inspected. | pass |
-| `gh pr checks 2 --repo jmagar/ytdl-mcp` | CI green. | Previous run green; final push run pending when this note was written. | warn |
+| `gh pr checks 2 --repo jmagar/ytdl-rmcp` | CI green. | Previous run green; final push run pending when this note was written. | warn |
 
 ## Risks and Rollback
 
@@ -161,7 +161,7 @@ The search implementation depends on yt-dlp search JSON shape and YouTube extrac
 
 ## References
 
-- PR #2: https://github.com/jmagar/ytdl-mcp/pull/2
+- PR #2: https://github.com/jmagar/ytdl-rmcp/pull/2
 - MCP Apps/ext-apps package reference cloned under `/tmp/mcp-ext-apps-ytdl`
 - mcporter CLI help and `testing:mcporter` skill guidance
 - Aurora design tokens from the invoked Aurora design-system skill
@@ -173,5 +173,5 @@ The search implementation depends on yt-dlp search JSON shape and YouTube extrac
 ## Next Steps
 
 1. Wait for final PR checks to complete after the session-log commit push.
-2. Re-run `gh pr checks 2 --repo jmagar/ytdl-mcp` and confirm check, packaging, cross-build, GitGuardian, and CodeRabbit remain green.
+2. Re-run `gh pr checks 2 --repo jmagar/ytdl-rmcp` and confirm check, packaging, cross-build, GitGuardian, and CodeRabbit remain green.
 3. Merge PR #2 when the final checks are green and no new actionable review comments appear.

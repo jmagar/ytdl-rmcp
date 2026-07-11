@@ -22,9 +22,9 @@ pub const DEFAULT_PLEX_PLAYLIST: &str = "yt-dlp Downloads";
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub remote: Option<String>,
-    pub dest_path: Option<String>,
-    pub video_dest_path: Option<String>,
+    pub target_path: Option<String>,
+    pub video_target_path: Option<String>,
+    pub allow_local_targets: bool,
     pub staging_dir: Option<String>,
     pub audio_format: String,
     /// Extra ssh options appended after [`DEFAULT_SSH_OPTS`].
@@ -73,10 +73,15 @@ impl Config {
             }
         });
 
+        let legacy_audio_target = legacy_target_path("YTDLP_REMOTE_PATH");
+        let target_path = non_empty("YTDLP_TARGET_PATH").or(legacy_audio_target);
+        let video_target_path = non_empty("YTDLP_VIDEO_TARGET_PATH")
+            .or_else(|| legacy_target_path("YTDLP_VIDEO_REMOTE_PATH"));
+
         Ok(Self {
-            remote: non_empty("YTDLP_REMOTE"),
-            dest_path: non_empty("YTDLP_REMOTE_PATH"),
-            video_dest_path: non_empty("YTDLP_VIDEO_REMOTE_PATH"),
+            target_path,
+            video_target_path,
+            allow_local_targets: as_bool("YTDLP_ALLOW_LOCAL_TARGETS", false),
             staging_dir: non_empty("YTDLP_STAGING_DIR"),
             audio_format: non_empty("YTDLP_AUDIO_FORMAT").unwrap_or_else(|| "mp3".into()),
             ssh_opts,
@@ -110,7 +115,7 @@ impl Config {
     /// production startup. Production code paths must use `from_env_result`.
     #[cfg(test)]
     pub fn from_env() -> Self {
-        Self::from_env_result().expect("invalid ytdl-mcp environment configuration")
+        Self::from_env_result().expect("invalid ytdl-rmcp environment configuration")
     }
 
     /// Full ssh option list: forced defaults followed by any user extras.
@@ -130,6 +135,12 @@ impl Config {
     pub fn transfer_timeout(&self) -> Duration {
         Duration::from_secs(self.transfer_timeout_secs)
     }
+}
+
+fn legacy_target_path(path_env: &str) -> Option<String> {
+    let remote = non_empty("YTDLP_REMOTE")?;
+    let path = non_empty(path_env)?;
+    Some(format!("ssh:{remote}:{path}"))
 }
 
 pub(crate) fn normalize_sha256_pin(value: &str) -> Option<String> {

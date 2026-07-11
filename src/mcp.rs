@@ -87,11 +87,11 @@ impl YtdlServer {
 #[tool_router]
 impl YtdlServer {
     /// Download audio, video, or both from one or more URLs with yt-dlp, embed
-    /// metadata + cover art, organize by artist, and rsync the result to a
-    /// directory on an SSH remote. Audio and video go to separate destinations.
+    /// metadata + cover art, organize by artist, and transfer the result to a
+    /// target path. Audio and video can go to separate destinations.
     #[tool(
         name = "youtube_download",
-        description = "Download audio/video from a yt-dlp-supported URL, tag it, and rsync to an SSH remote."
+        description = "Download audio/video from a yt-dlp-supported URL, tag it, and transfer it to a local, SSH, or rclone target."
     )]
     async fn youtube_download(
         &self,
@@ -99,7 +99,7 @@ impl YtdlServer {
     ) -> Result<CallToolResult, ErrorData> {
         let started = std::time::Instant::now();
         tracing::info!(
-            service = "ytdl-mcp",
+            service = "ytdl-rmcp",
             tool = "youtube_download",
             mode = ?input.mode,
             "tool dispatch start"
@@ -107,8 +107,15 @@ impl YtdlServer {
         let result = service::run_download(&self.cfg, &self.tools, input).await;
         let elapsed_ms = started.elapsed().as_millis();
         match &result {
-            Ok(_) => tracing::info!(service = "ytdl-mcp", tool = "youtube_download", elapsed_ms, "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_download", elapsed_ms, error = %e, "tool dispatch error"),
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_download",
+                elapsed_ms,
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_download", elapsed_ms, error = %e, "tool dispatch error")
+            }
         }
         Ok(text_tool_result(result))
     }
@@ -124,12 +131,23 @@ impl YtdlServer {
         Parameters(input): Parameters<ProbeInput>,
     ) -> Result<CallToolResult, ErrorData> {
         let started = std::time::Instant::now();
-        tracing::info!(service = "ytdl-mcp", tool = "youtube_probe", "tool dispatch start");
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_probe",
+            "tool dispatch start"
+        );
         let result = service::run_probe(&self.cfg, &self.tools, input).await;
         let elapsed_ms = started.elapsed().as_millis();
         match &result {
-            Ok(_) => tracing::info!(service = "ytdl-mcp", tool = "youtube_probe", elapsed_ms, "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_probe", elapsed_ms, error = %e, "tool dispatch error"),
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_probe",
+                elapsed_ms,
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_probe", elapsed_ms, error = %e, "tool dispatch error")
+            }
         }
         Ok(text_tool_result(result))
     }
@@ -145,12 +163,23 @@ impl YtdlServer {
         Parameters(input): Parameters<IdentifyInput>,
     ) -> Result<CallToolResult, ErrorData> {
         let started = std::time::Instant::now();
-        tracing::info!(service = "ytdl-mcp", tool = "youtube_identify", "tool dispatch start");
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_identify",
+            "tool dispatch start"
+        );
         let result = service::run_identify(&self.cfg, input).await;
         let elapsed_ms = started.elapsed().as_millis();
         match &result {
-            Ok(_) => tracing::info!(service = "ytdl-mcp", tool = "youtube_identify", elapsed_ms, "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_identify", elapsed_ms, error = %e, "tool dispatch error"),
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_identify",
+                elapsed_ms,
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_identify", elapsed_ms, error = %e, "tool dispatch error")
+            }
         }
         Ok(text_tool_result(result))
     }
@@ -166,12 +195,19 @@ impl YtdlServer {
         Parameters(input): Parameters<SearchInput>,
     ) -> Result<CallToolResult, ErrorData> {
         let started = std::time::Instant::now();
-        tracing::info!(service = "ytdl-mcp", tool = "youtube_search", query = %input.query, "tool dispatch start");
+        tracing::info!(service = "ytdl-rmcp", tool = "youtube_search", query = %input.query, "tool dispatch start");
         let result = service::run_search(&self.cfg, &self.tools, input).await;
         let elapsed_ms = started.elapsed().as_millis();
         match &result {
-            Ok(_) => tracing::info!(service = "ytdl-mcp", tool = "youtube_search", elapsed_ms, "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_search", elapsed_ms, error = %e, "tool dispatch error"),
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_search",
+                elapsed_ms,
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_search", elapsed_ms, error = %e, "tool dispatch error")
+            }
         }
         Ok(text_tool_result(result))
     }
@@ -179,17 +215,27 @@ impl YtdlServer {
     /// Summarize the persistent download ledger written by `youtube_download`.
     #[tool(
         name = "youtube_stats",
-        description = "Summarize ytdl-mcp download history, totals, file kinds, uploaders, and recent entries."
+        description = "Summarize ytdl-rmcp download history, totals, file kinds, uploaders, and recent entries."
     )]
     async fn youtube_stats(
         &self,
         Parameters(input): Parameters<StatsInput>,
     ) -> Result<CallToolResult, ErrorData> {
-        tracing::info!(service = "ytdl-mcp", tool = "youtube_stats", "tool dispatch start");
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_stats",
+            "tool dispatch start"
+        );
         let result = service::run_stats(&self.cfg, input);
         match &result {
-            Ok(_) => tracing::info!(service = "ytdl-mcp", tool = "youtube_stats", "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_stats", error = %e, "tool dispatch error"),
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_stats",
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_stats", error = %e, "tool dispatch error")
+            }
         }
         Ok(text_tool_result(result))
     }
@@ -207,12 +253,20 @@ impl YtdlServer {
         Parameters(input): Parameters<SearchInput>,
     ) -> Result<CallToolResult, ErrorData> {
         let started = std::time::Instant::now();
-        tracing::info!(service = "ytdl-mcp", tool = "youtube_search_ui", query = %input.query, "tool dispatch start");
+        tracing::info!(service = "ytdl-rmcp", tool = "youtube_search_ui", query = %input.query, "tool dispatch start");
         let result = service::run_search_payload(&self.cfg, &self.tools, &input).await;
         let elapsed_ms = started.elapsed().as_millis();
         match &result {
-            Ok(payload) => tracing::info!(service = "ytdl-mcp", tool = "youtube_search_ui", elapsed_ms, result_count = payload.results.len(), "tool dispatch success"),
-            Err(e) => tracing::warn!(service = "ytdl-mcp", tool = "youtube_search_ui", elapsed_ms, error = %e, "tool dispatch error"),
+            Ok(payload) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_search_ui",
+                elapsed_ms,
+                result_count = payload.results.len(),
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_search_ui", elapsed_ms, error = %e, "tool dispatch error")
+            }
         }
         Ok(structured_tool_result(result, search_app::tool_meta()))
     }
@@ -228,7 +282,7 @@ impl ServerHandler for YtdlServer {
                 .build(),
         )
         .with_server_info(Implementation::new(
-            "ytdl-mcp",
+            "ytdl-rmcp",
             concat!(env!("CARGO_PKG_VERSION"), " (", env!("YTDL_GIT_SHA"), ")"),
         ))
     }
