@@ -92,6 +92,34 @@ fn app_backed_tools_advertise_metadata_and_output_schema() {
 }
 
 #[test]
+fn app_callable_tools_advertise_widget_accessibility() {
+    let tools = YtdlServer::tool_router().list_all();
+
+    for name in [
+        "youtube_search",
+        "youtube_probe",
+        "youtube_download",
+        "youtube_stats",
+    ] {
+        let tool = tools
+            .iter()
+            .find(|tool| tool.name == name)
+            .unwrap_or_else(|| panic!("{name} tool"));
+        let meta = tool.meta.as_ref().unwrap_or_else(|| panic!("{name} meta"));
+
+        assert_eq!(
+            meta.0["ui"]["visibility"],
+            serde_json::json!(["model", "app"])
+        );
+        assert_eq!(
+            meta.0["openai/widgetAccessible"],
+            serde_json::json!(true),
+            "{name} should be callable from ChatGPT-style widgets"
+        );
+    }
+}
+
+#[test]
 fn tool_router_advertises_all_eight_tools() {
     let tools = YtdlServer::tool_router().list_all();
     let mut names: Vec<&str> = tools.iter().map(|tool| tool.name.as_ref()).collect();
