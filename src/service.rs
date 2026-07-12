@@ -20,7 +20,8 @@ use crate::bootstrap;
 use crate::config::Config;
 use crate::downloader::{self, FetchOptions, ItemResult};
 use crate::model::{
-    DownloadInput, IdentifyInput, ProbeInput, SearchInput, SearchPayload, StatsInput,
+    DownloadInput, IdentifyInput, PlexPlaylistAction, PlexPlaylistInput, ProbeInput, SearchInput,
+    SearchPayload, StatsInput, TransferQueueAction, TransferQueueInput,
 };
 use crate::urls::strip_mix_params;
 
@@ -284,6 +285,42 @@ pub async fn run_download(
     } else {
         None
     };
+
+    if !transferred {
+        if let Some(kept) = staging_kept.as_deref() {
+            let queue_input = crate::transfer_queue::TransferFailureManifestInput {
+                staging_path: kept.to_path_buf(),
+                targets: transfer_dests
+                    .iter()
+                    .map(|(kind, target)| ((*kind).to_string(), target.display().to_string()))
+                    .collect(),
+                files: results
+                    .iter()
+                    .flat_map(|item| item.files.iter())
+                    .filter_map(|file| {
+                        file.path
+                            .strip_prefix(&staging_path)
+                            .ok()
+                            .map(PathBuf::from)
+                    })
+                    .collect(),
+                last_error: transfer_error
+                    .clone()
+                    .unwrap_or_else(|| "transfer failed".to_string()),
+            };
+            let cfg = Arc::clone(cfg);
+            let record_result = tokio::task::spawn_blocking(move || {
+                crate::transfer_queue::record_failed_transfer(&cfg, queue_input)
+            })
+            .await;
+            if let Err(error) = record_result
+                .map_err(anyhow::Error::from)
+                .and_then(|result| result)
+            {
+                tracing::warn!(%error, "failed to record transfer queue manifest");
+            }
+        }
+    }
 
     let mut payload = build_download_payload(
         &results,
@@ -622,6 +659,169 @@ pub fn run_stats(cfg: &Config, input: StatsInput) -> Result<String> {
         input.response_format,
         crate::history::render_stats_markdown,
     ))
+}
+
+pub async fn run_plex_playlist(cfg: &Arc<Config>, input: PlexPlaylistInput) -> Result<String> {
+    match input.action {
+        PlexPlaylistAction::ListCandidates => {
+            let payload = crate::history::playlist_candidates(cfg, input.effective_limit())?;
+            Ok(render(
+                &serde_json::to_value(&payload)?,
+                input.response_format,
+                crate::history::render_playlist_candidates_markdown,
+            ))
+        }
+        PlexPlaylistAction::Preview | PlexPlaylistAction::Apply => {
+            let playlist = input
+                .playlist
+                .clone()
+                .or_else(|| cfg.plex_playlist.clone())
+                .unwrap_or_else(|| crate::config::DEFAULT_PLEX_PLAYLIST.to_string());
+            let candidate_limit = if input.candidate_ids.is_empty() {
+                input.effective_limit()
+            } else {
+                0
+            };
+            let candidates = crate::history::playlist_candidates(cfg, candidate_limit)?;
+            let wanted: std::collections::BTreeSet<&str> =
+                input.candidate_ids.iter().map(String::as_str).collect();
+            let tracks: Vec<crate::plex::PlexTrackInput> = candidates
+                .candidates
+                .iter()
+                .filter(|candidate| {
+                    wanted.is_empty() || wanted.contains(candidate.candidate_id.as_str())
+                })
+                .map(|candidate| crate::plex::PlexTrackInput {
+                    title: candidate.title.clone(),
+                    uploader: candidate.uploader.clone(),
+                })
+                .collect();
+            if !wanted.is_empty() && tracks.len() != wanted.len() {
+                let found: std::collections::BTreeSet<&str> = candidates
+                    .candidates
+                    .iter()
+                    .map(|candidate| candidate.candidate_id.as_str())
+                    .collect();
+                let missing = wanted
+                    .difference(&found)
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                bail!("unknown playlist candidate ID(s): {missing}");
+            }
+            let cfg = Arc::clone(cfg);
+            let action = input.action;
+            let result = tokio::task::spawn_blocking(move || match action {
+                PlexPlaylistAction::Preview => {
+                    crate::plex::preview_audio_tracks(&cfg, &playlist, &tracks)
+                }
+                PlexPlaylistAction::Apply => {
+                    crate::plex::apply_audio_tracks(&cfg, &playlist, &tracks)
+                }
+                PlexPlaylistAction::ListCandidates => unreachable!(),
+            })
+            .await??;
+            Ok(render(
+                &serde_json::to_value(&result)?,
+                input.response_format,
+                render_plex_playlist_markdown,
+            ))
+        }
+    }
+}
+
+pub async fn run_transfer_queue(cfg: &Config, input: TransferQueueInput) -> Result<String> {
+    let value = match input.action {
+        TransferQueueAction::List => {
+            let cfg = cfg.clone();
+            serde_json::to_value(
+                tokio::task::spawn_blocking(move || crate::transfer_queue::list_queue(&cfg))
+                    .await??,
+            )?
+        }
+        TransferQueueAction::Prune => {
+            let cfg = cfg.clone();
+            serde_json::to_value(
+                tokio::task::spawn_blocking(move || crate::transfer_queue::prune_missing(&cfg))
+                    .await??,
+            )?
+        }
+        TransferQueueAction::Retry => {
+            let manifest_id = input
+                .manifest_id
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| anyhow::anyhow!("manifest_id is required for retry"))?;
+            serde_json::to_value(
+                crate::transfer_queue::retry_one(cfg, manifest_id, input.keep_local).await?,
+            )?
+        }
+        TransferQueueAction::RetryAll => {
+            serde_json::to_value(crate::transfer_queue::retry_all(cfg, input.keep_local).await?)?
+        }
+    };
+    Ok(render(
+        &value,
+        input.response_format,
+        render_transfer_queue_markdown,
+    ))
+}
+
+fn render_transfer_queue_markdown(value: &serde_json::Value) -> String {
+    if let Some(entries) = value["entries"].as_array() {
+        if value.get("retried").is_some() {
+            let mut lines = vec![format!(
+                "Retried {} transfer queue item(s): {} completed, {} failed.",
+                value["retried"].as_u64().unwrap_or(0),
+                value["completed"].as_u64().unwrap_or(0),
+                value["failed"].as_u64().unwrap_or(0)
+            )];
+            push_string_array_details(&mut lines, "Errors", &value["errors"]);
+            return lines.join("\n");
+        }
+        return format!("{} pending transfer queue item(s).", entries.len());
+    }
+    if let Some(pruned) = value["pruned"].as_u64() {
+        return format!("Pruned {pruned} transfer queue item(s).");
+    }
+    "Transfer queue action complete.".to_string()
+}
+
+fn render_plex_playlist_markdown(value: &serde_json::Value) -> String {
+    let playlist = value["playlist"].as_str().unwrap_or("Plex playlist");
+    let matched = value["matched"].as_u64().unwrap_or(0);
+    let added = value["added"].as_u64().unwrap_or(0);
+    let already = value["already_present"].as_u64().unwrap_or(0);
+    let mut lines = vec![format!(
+        "{playlist}: {matched} matched, {added} added, {already} already present."
+    )];
+    if let Some(missing) = value["missing"].as_array() {
+        if !missing.is_empty() {
+            lines.push("Missing tracks:".to_string());
+            for track in missing {
+                let title = track["title"].as_str().unwrap_or("unknown title");
+                let uploader = track["uploader"].as_str().unwrap_or("unknown uploader");
+                lines.push(format!("- {title} ({uploader})"));
+            }
+        }
+    }
+    push_string_array_details(&mut lines, "Errors", &value["errors"]);
+    if let Some(url) = value["plexamp_url"].as_str() {
+        lines.push(format!("Plexamp: {url}"));
+    }
+    lines.join("\n")
+}
+
+fn push_string_array_details(lines: &mut Vec<String>, label: &str, value: &serde_json::Value) {
+    let Some(items) = value.as_array().filter(|items| !items.is_empty()) else {
+        return;
+    };
+    lines.push(format!("{label}:"));
+    for item in items {
+        if let Some(text) = item.as_str() {
+            lines.push(format!("- {text}"));
+        }
+    }
 }
 
 #[cfg(test)]

@@ -339,6 +339,84 @@ impl StatsInput {
     }
 }
 
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum PlexPlaylistAction {
+    ListCandidates,
+    Preview,
+    Apply,
+}
+
+fn default_plex_playlist_action() -> PlexPlaylistAction {
+    PlexPlaylistAction::ListCandidates
+}
+
+fn default_playlist_limit() -> u32 {
+    100
+}
+
+pub const MAX_PLAYLIST_LIMIT: u32 = 500;
+
+/// Input for `youtube_plex_playlist`.
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+pub struct PlexPlaylistInput {
+    /// Action to run: list candidates, preview Plex matches, or apply playlist changes.
+    #[serde(default = "default_plex_playlist_action")]
+    pub action: PlexPlaylistAction,
+    /// Plex playlist title or ID. Falls back to YTDLP_PLEX_PLAYLIST/default.
+    #[serde(default)]
+    pub playlist: Option<String>,
+    /// Stable opaque history candidate IDs to use for preview/apply. Empty means all candidates.
+    #[serde(default)]
+    pub candidate_ids: Vec<String>,
+    /// Number of successful transferred audio history candidates to inspect. 0 means no limit; positive values are capped at 500.
+    #[serde(default = "default_playlist_limit")]
+    pub limit: u32,
+    /// 'markdown' (human-readable) or 'json' (machine-readable).
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
+impl PlexPlaylistInput {
+    pub fn effective_limit(&self) -> usize {
+        if self.limit == 0 {
+            0
+        } else {
+            self.limit.min(MAX_PLAYLIST_LIMIT) as usize
+        }
+    }
+}
+
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferQueueAction {
+    List,
+    Retry,
+    RetryAll,
+    Prune,
+}
+
+fn default_transfer_queue_action() -> TransferQueueAction {
+    TransferQueueAction::List
+}
+
+/// Input for `youtube_transfer_queue`.
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+pub struct TransferQueueInput {
+    /// Action to run: list, retry one manifest, retry all manifests, or prune missing staging dirs.
+    #[serde(default = "default_transfer_queue_action")]
+    pub action: TransferQueueAction,
+    /// Opaque transfer queue manifest ID for `retry`.
+    #[serde(default)]
+    pub manifest_id: Option<String>,
+    /// Keep the retained staging directory after a successful retry.
+    #[serde(default)]
+    pub keep_local: bool,
+    /// 'markdown' (human-readable) or 'json' (machine-readable).
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct SearchResultItem {
     pub title: String,

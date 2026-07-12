@@ -137,6 +137,40 @@ fn add_downloaded_audio_creates_playlist_with_first_matched_track() {
 }
 
 #[test]
+fn preview_playlist_does_not_mutate_plex() {
+    let mut plex = FakePlex::default();
+    let tracks = vec![track("New Song", "Artist B")];
+
+    let result = preview_audio_tracks_with_transport(&mut plex, "Downloads", &tracks).unwrap();
+
+    assert_eq!(result.matched, 1);
+    assert_eq!(result.added, 0);
+    assert_eq!(result.already_present, 0);
+    assert!(plex.posts.is_empty());
+    assert!(plex.puts.is_empty());
+}
+
+#[test]
+fn apply_playlist_returns_best_effort_plexamp_link() {
+    let mut plex = FakePlex::default();
+    let tracks = vec![track("New Song", "Artist B")];
+
+    let result = apply_audio_tracks_with_transport(&mut plex, "Downloads", &tracks).unwrap();
+
+    assert_eq!(result.playlist_id.as_deref(), Some("99"));
+    assert_eq!(
+        result.playback_link_status.as_deref(),
+        Some("generated_unverified")
+    );
+    assert!(result
+        .plexamp_url
+        .as_deref()
+        .unwrap()
+        .starts_with("https://listen.plex.tv/player/playback/playMedia?uri="));
+    assert!(!result.plexamp_url.unwrap().contains("X-Plex-Token"));
+}
+
+#[test]
 fn add_downloaded_audio_without_audio_files_does_not_require_plex_config() {
     let cfg = Config {
         target_path: None,
@@ -421,6 +455,19 @@ fn parent_title_satisfies_artist_match() {
     assert_eq!(update.matched, 1);
     assert_eq!(update.added, 1);
     assert!(update.missing.is_empty());
+}
+
+#[test]
+fn playback_links_use_path_component_percent_encoding() {
+    let links = playback_links("machine id", "playlist 1");
+
+    assert!(links.plexamp_url.contains("machine%20id"));
+    assert!(links.plexamp_url.contains("playlist%201"));
+    assert!(!links.plexamp_url.contains('+'));
+    assert!(links.plex_web_url.contains("machine%20id"));
+    assert!(links
+        .plex_web_url
+        .contains("%2Fplaylists%2Fplaylist%201%2Fitems"));
 }
 
 #[test]

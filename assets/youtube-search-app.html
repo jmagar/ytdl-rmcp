@@ -38,6 +38,24 @@
       box-shadow: var(--aurora-shadow-strong), inset 0 1px 0 rgba(255,255,255,0.05);
       overflow: hidden;
     }
+    .tabs {
+      display: flex;
+      gap: 1px;
+      padding: 8px;
+      background: var(--aurora-control-surface);
+      border-bottom: 1px solid var(--aurora-border-default);
+    }
+    .tab {
+      height: 34px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--aurora-text-muted);
+    }
+    .tab[aria-selected="true"] {
+      border-color: var(--aurora-border-strong);
+      background: color-mix(in srgb, var(--aurora-accent-primary) 16%, var(--aurora-control-surface));
+      color: var(--aurora-text-primary);
+    }
     .toolbar {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -46,6 +64,7 @@
       background: var(--aurora-panel-medium);
       border-bottom: 1px solid var(--aurora-border-default);
     }
+    .toolbar.multi { grid-template-columns: 1fr repeat(3, auto); }
     input {
       min-width: 0;
       height: 40px;
@@ -68,6 +87,7 @@
       font: 650 13px/1 Inter, ui-sans-serif, system-ui, sans-serif;
       padding: 0 14px;
       cursor: pointer;
+      white-space: nowrap;
     }
     .results { display: grid; gap: 1px; background: var(--aurora-border-default); }
     .result {
@@ -78,6 +98,15 @@
       background: var(--aurora-panel-strong);
       border: 1px solid transparent;
     }
+    .row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 12px;
+      padding: 12px;
+      background: var(--aurora-panel-strong);
+      border: 1px solid transparent;
+    }
+    .candidate { grid-template-columns: auto minmax(0, 1fr); }
     .result[aria-selected="true"] { border-color: var(--aurora-border-strong); box-shadow: inset 3px 0 0 var(--aurora-accent-primary); }
     .thumb {
       width: 112px;
@@ -91,224 +120,88 @@
     .title,
     .meta { overflow-wrap: anywhere; }
     .meta { color: var(--aurora-text-muted); font-size: 12px; }
-    .actions { display: flex; align-items: center; gap: 8px; }
+    .actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .actions button { height: 32px; padding: 0 10px; }
     .actions .download { border-color: color-mix(in srgb, var(--aurora-accent-pink) 55%, var(--aurora-border-strong)); background: color-mix(in srgb, var(--aurora-accent-pink) 13%, var(--aurora-control-surface)); }
-    .empty { padding: 30px; color: var(--aurora-text-muted); text-align: center; }
-    @media (max-width: 640px) {
-      .toolbar { grid-template-columns: 1fr; }
+    .status,
+    .empty { padding: 14px; color: var(--aurora-text-muted); }
+    .empty { min-height: 74px; display: grid; place-items: center; text-align: center; }
+    .check { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--aurora-accent-primary); }
+    @media (max-width: 720px) {
+      .toolbar,
+      .toolbar.multi { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; }
       .result { grid-template-columns: 88px 1fr; }
       .thumb { width: 88px; }
       .actions { grid-column: 1 / -1; }
+      .row { grid-template-columns: 1fr; }
+      .candidate { grid-template-columns: auto minmax(0, 1fr); }
     }
   </style>
 </head>
 <body>
   <main class="shell">
     <section class="panel">
-      <form class="toolbar" id="search-form">
-        <input id="query" name="query" autocomplete="off" placeholder="Search YouTube" />
-        <button type="submit">Search</button>
-      </form>
-      <div class="results" id="results">
-        <div class="empty">Enter a query to search YouTube.</div>
-      </div>
+      <nav class="tabs" aria-label="Views">
+        <button class="tab" type="button" data-tab="search" aria-selected="true">Search</button>
+        <button class="tab" type="button" data-tab="stats" aria-selected="false">Stats</button>
+        <button class="tab" type="button" data-tab="playlist" aria-selected="false">Playlist</button>
+        <button class="tab" type="button" data-tab="transfers" aria-selected="false">Transfers</button>
+      </nav>
+
+      <section class="view" data-view="search">
+        <form class="toolbar" id="search-form">
+          <input id="query" name="query" autocomplete="off" placeholder="Search YouTube" aria-label="Search YouTube" />
+          <button type="submit">Search</button>
+        </form>
+        <div class="results" id="results">
+          <div class="empty">Enter a query to search YouTube.</div>
+        </div>
+      </section>
+
+      <section class="view" data-view="stats" hidden>
+        <div class="toolbar">
+          <input id="stats-limit" type="number" min="0" max="100" value="10" aria-label="Recent stats limit" />
+          <button id="stats-refresh" type="button">Refresh</button>
+        </div>
+        <div id="stats-status" class="status"></div>
+        <div id="stats-results" class="results">
+          <div class="empty">No stats loaded.</div>
+        </div>
+      </section>
+
+      <section class="view" data-view="playlist" hidden>
+        <div class="toolbar multi">
+          <input id="playlist-name" type="text" placeholder="Playlist name" aria-label="Playlist name" />
+          <button id="playlist-refresh" type="button">Refresh</button>
+          <button id="playlist-preview" type="button">Preview</button>
+          <button id="playlist-apply" type="button">Apply</button>
+        </div>
+        <div id="playlist-status" class="status"></div>
+        <div id="playlist-results" class="results">
+          <div class="empty">No playlist candidates loaded.</div>
+        </div>
+      </section>
+
+      <section class="view" data-view="transfers" hidden>
+        <div class="toolbar multi">
+          <span></span>
+          <button id="transfers-refresh" type="button">Refresh</button>
+          <button id="transfers-retry-all" type="button">Retry all</button>
+          <button id="transfers-prune" type="button">Prune missing</button>
+        </div>
+        <div id="transfers-status" class="status"></div>
+        <div id="transfers-results" class="results">
+          <div class="empty">No transfer queue loaded.</div>
+        </div>
+      </section>
     </section>
   </main>
   <script>
     {{MCP_EXT_APPS_BUNDLE}}
   </script>
   <script>
-    const { App } = window.McpExtApps;
-    const resultsEl = document.querySelector("#results");
-    const form = document.querySelector("#search-form");
-    const queryEl = document.querySelector("#query");
-    const app = new App({ name: "YouTube search", version: "1.0.0" });
-    const isDemo = new URLSearchParams(window.location.search).has("demo");
-    const demoResults = [
-      {
-        title: "Slow Pulp - Falling Apart Live",
-        url: "https://www.youtube.com/watch?v=abc123",
-        uploader: "Slow Pulp",
-        duration: 215,
-        thumbnail: "https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg"
-      },
-      {
-        title: "Slow Pulp - Idaho Live",
-        url: "https://www.youtube.com/watch?v=def456",
-        uploader: "Live Room",
-        duration: 188,
-        thumbnail: "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg"
-      }
-    ];
-
-    function formatDuration(seconds) {
-      if (!seconds) return "unknown duration";
-      const total = Math.round(seconds);
-      return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-    }
-
-    function escapeHtml(value) {
-      return String(value || "").replace(/[&<>"']/g, (char) => ({
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;"
-      })[char]);
-    }
-
-    function showStatus(message) {
-      resultsEl.innerHTML = `<div class="empty">${escapeHtml(message)}</div>`;
-    }
-
-    function prependStatus(message) {
-      resultsEl.insertAdjacentHTML("afterbegin", `<div class="empty">${escapeHtml(message)}</div>`);
-    }
-
-    function render(results) {
-      if (!results || results.length === 0) {
-        showStatus("No results.");
-        return;
-      }
-      resultsEl.innerHTML = results.map((item, index) => `
-        <article class="result" aria-selected="${index === 0}">
-          <img class="thumb" src="${escapeHtml(item.thumbnail || "")}" alt="" />
-          <div class="copy">
-            <h2 class="title">${escapeHtml(item.title || "Untitled")}</h2>
-            <div class="meta">${escapeHtml(item.uploader || "Unknown channel")} - ${formatDuration(item.duration)}</div>
-            <div class="meta">${escapeHtml(item.url)}</div>
-          </div>
-          <div class="actions">
-            <button type="button" data-action="probe" data-url="${escapeHtml(item.url)}">Probe</button>
-            <button type="button" class="download" data-action="audio" data-url="${escapeHtml(item.url)}">Audio</button>
-            <button type="button" class="download" data-action="video" data-url="${escapeHtml(item.url)}">Video</button>
-          </div>
-        </article>
-      `).join("");
-    }
-
-    function toolText(result, fallback) {
-      return result?.content?.find((item) => item.type === "text")?.text || fallback;
-    }
-
-    // Some MCP hosts (e.g. the lab proxy in "code mode") hide regular tools and
-    // only expose them through a code-execution sandbox the embedded app cannot
-    // reach. They reject our callServerTool with an envelope like
-    // {"error":{"kind":"not_found","message":"tool `youtube_download` is hidden
-    // while code_mode mode is enabled"}}. callServerTool is the only channel an
-    // MCP App has, so translate that into a clear, actionable message instead of
-    // surfacing the raw JSON envelope.
-    function friendlyError(message) {
-      const text = String(message || "");
-      // The lab proxy hides regular tools in "code mode" and rejects widget
-      // callbacks to them. Depending on the host transport that surfaces either
-      // as a JSON envelope mentioning code mode, or as a bare streamable-HTTP
-      // "tools/call failed: 404" (a hidden tool is not found on the direct surface).
-      if (/hidden while code[_ ]?mode/i.test(text) ||
-          /tools\/call failed:\s*404/i.test(text)) {
-        return "This panel can't reach its YouTube tools because the MCP host is in code mode, which hides download/probe/search from direct calls. Enable widget tool callbacks on the host, or disable code mode, to probe, download, or re-search from here.";
-      }
-      try {
-        const inner = JSON.parse(text)?.error?.message;
-        if (inner) return inner;
-      } catch (_) {
-        // Not a JSON envelope; fall through to the original text.
-      }
-      return text || "Action failed.";
-    }
-
-    function parseResult(result) {
-      if (result?.isError) {
-        throw new Error(toolText(result, "Search failed."));
-      }
-      if (result?.structuredContent?.results) {
-        return result.structuredContent;
-      }
-      const text = result?.content?.find((item) => item.type === "text")?.text;
-      if (!text) throw new Error("Search returned no readable payload.");
-      try {
-        return JSON.parse(text);
-      } catch (error) {
-        throw new Error(`Search returned invalid JSON: ${error.message}`);
-      }
-    }
-
-    function renderPayload(result) {
-      const payload = parseResult(result);
-      if (payload.query) queryEl.value = payload.query;
-      render(payload.results || []);
-    }
-
-    function actionToolCall(action, url) {
-      const calls = {
-        probe: { name: "youtube_probe", arguments: { urls: url } },
-        audio: { name: "youtube_download", arguments: { urls: url, mode: "audio" } },
-        video: { name: "youtube_download", arguments: { urls: url, mode: "video" } }
-      };
-      return calls[action];
-    }
-
-    function showConnectionError() {
-      if (!isDemo) {
-        showStatus("Could not connect to the MCP host.");
-      }
-    }
-
-    app.ontoolinput = (params) => {
-      // The host delivers the originating tool call via ui/notifications/tool-input,
-      // which nests the call arguments under `arguments` ({ arguments: { query } }).
-      // Fall back to a flat shape in case a host passes the args directly.
-      const query = params?.arguments?.query ?? params?.query;
-      if (query) queryEl.value = query;
-    };
-
-    app.ontoolresult = (result) => {
-      renderPayload(result);
-    };
-
-    app.onerror = showConnectionError;
-
-    form.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      const query = queryEl.value.trim();
-      if (!query) return;
-      showStatus("Searching...");
-      try {
-        const response = await app.callServerTool({
-          name: "youtube_search",
-          arguments: { query, limit: 10, response_format: "json" }
-        });
-        renderPayload(response);
-      } catch (error) {
-        showStatus(friendlyError(error.message));
-      }
-    });
-
-    resultsEl.addEventListener("click", async (event) => {
-      const button = event.target.closest("button[data-action]");
-      if (!button) return;
-      const url = button.dataset.url;
-      const action = button.dataset.action;
-      const toolCall = actionToolCall(action, url);
-      if (!toolCall) return;
-      try {
-        const response = await app.callServerTool(toolCall);
-        if (response?.isError) {
-          throw new Error(toolText(response, "Action failed."));
-        }
-        prependStatus(friendlyError(toolText(response, "Action completed.")));
-      } catch (error) {
-        prependStatus(friendlyError(error.message));
-      }
-    });
-
-    if (isDemo) {
-      queryEl.value = "slow pulp live";
-      render(demoResults);
-    }
-
-    app.connect().catch(showConnectionError);
+    {{YOUTUBE_SEARCH_APP_SCRIPT}}
   </script>
 </body>
 </html>

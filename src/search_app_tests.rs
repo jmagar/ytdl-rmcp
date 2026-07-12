@@ -41,6 +41,32 @@ fn app_resource_contains_html_and_aurora_hooks() {
 }
 
 #[test]
+fn app_html_contains_playlist_and_transfers_views() {
+    let html = super::html();
+    assert!(html.contains("data-view=\"playlist\""));
+    assert!(html.contains("data-view=\"transfers\""));
+    assert!(!html.contains("{{YOUTUBE_SEARCH_APP_SCRIPT}}"));
+}
+
+#[test]
+fn app_metadata_allows_plex_external_destinations() {
+    let meta = super::resource_meta();
+    let widget_csp = meta
+        .0
+        .get("openai/widgetCSP")
+        .and_then(serde_json::Value::as_object)
+        .unwrap();
+    let redirects = widget_csp
+        .get("redirect_domains")
+        .and_then(serde_json::Value::as_array)
+        .unwrap();
+    assert!(redirects
+        .iter()
+        .any(|value| value == "https://listen.plex.tv"));
+    assert!(redirects.iter().any(|value| value == "https://app.plex.tv"));
+}
+
+#[test]
 fn tool_meta_links_to_app_resource() {
     let meta = super::tool_meta();
 

@@ -1,6 +1,8 @@
 use rmcp::ServerHandler;
 
-use super::{error_tool_result, structured_tool_result, text_tool_result, YtdlServer};
+use super::{
+    error_tool_result, json_text_tool_result, structured_tool_result, text_tool_result, YtdlServer,
+};
 use crate::config::Config;
 
 /// A minimal, valid `Config` built with benign defaults. These router/get_info
@@ -39,12 +41,14 @@ fn test_config() -> Config {
 
 /// Every tool this server exposes. The dispatch surface is the source of truth
 /// for the MCP contract, so the test pins the exact set.
-const EXPECTED_TOOLS: [&str; 6] = [
+const EXPECTED_TOOLS: [&str; 8] = [
     "youtube_download",
     "youtube_probe",
     "youtube_identify",
     "youtube_search",
     "youtube_stats",
+    "youtube_plex_playlist",
+    "youtube_transfer_queue",
     "youtube_search_ui",
 ];
 
@@ -67,7 +71,28 @@ fn youtube_search_ui_advertises_app_metadata_and_output_schema() {
 }
 
 #[test]
-fn tool_router_advertises_all_six_tools() {
+fn app_backed_tools_advertise_metadata_and_output_schema() {
+    let tools = YtdlServer::tool_router().list_all();
+    for name in [
+        "youtube_search_ui",
+        "youtube_plex_playlist",
+        "youtube_transfer_queue",
+    ] {
+        let tool = tools.iter().find(|tool| tool.name == name).expect(name);
+
+        assert_eq!(
+            tool.meta.as_ref().unwrap().0["ui"]["resourceUri"],
+            serde_json::json!(super::search_app::RESOURCE_URI)
+        );
+        assert!(
+            tool.output_schema.is_some(),
+            "{name} should advertise output"
+        );
+    }
+}
+
+#[test]
+fn tool_router_advertises_all_eight_tools() {
     let tools = YtdlServer::tool_router().list_all();
     let mut names: Vec<&str> = tools.iter().map(|tool| tool.name.as_ref()).collect();
     names.sort_unstable();
@@ -77,7 +102,7 @@ fn tool_router_advertises_all_six_tools() {
 
     assert_eq!(
         names, expected,
-        "the dispatch surface must advertise exactly the six MCP tools"
+        "the dispatch surface must advertise exactly the eight MCP tools"
     );
 
     // Every advertised tool must carry an input schema so a client can call it.
@@ -169,6 +194,24 @@ fn structured_tool_result_carries_structured_content_meta_and_errors_gracefully(
         .as_text()
         .expect("error content should be text");
     assert_eq!(text.text, "Error: bad params");
+}
+
+#[test]
+fn json_text_tool_result_attaches_structured_content_when_text_is_json() {
+    let meta = super::search_app::tool_meta();
+    let ok = json_text_tool_result::<&str>(
+        Ok(r#"{"entries":[],"queue_dir":"/tmp/q"}"#.to_string()),
+        meta,
+    );
+
+    assert_ne!(ok.is_error, Some(true));
+    assert_eq!(
+        ok.structured_content
+            .as_ref()
+            .expect("JSON text should become structured content")["queue_dir"],
+        "/tmp/q"
+    );
+    assert!(ok.meta.is_some());
 }
 
 #[test]

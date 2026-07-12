@@ -52,6 +52,8 @@ needs neither pre-installed — the one binary is the whole install.
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
 | `youtube_identify` | Fingerprint local audio with `fpcalc`, return AcoustID/MusicBrainz candidates, preview canonical tags, and optionally write high-confidence tags. |
 | `youtube_stats` | Summarize the download ledger: totals, file kinds, uploaders, and recent entries. |
+| `youtube_plex_playlist` | Build or preview Plex audio playlists from successful transferred audio history. |
+| `youtube_transfer_queue` | List and drain retained-staging transfer failure manifests. |
 
 ### `youtube_download` parameters
 
@@ -121,6 +123,27 @@ Optional keys are attached only when the relevant stage ran:
   failed.
 
 `youtube_probe` takes `urls` and `response_format`.
+
+### `youtube_plex_playlist`
+
+Build or preview Plex audio playlists from successful ytdl-rmcp download
+history. `list_candidates` returns audio candidates only from history entries
+where `transferred` is `true`; `preview` resolves candidates against Plex
+without mutation; `apply` adds matches idempotently. Failed or retained-staging
+transfers are intentionally excluded.
+
+`apply` can return `plexamp_url`, `plex_web_url`, and
+`playback_link_status`. The Plex Media Server playlist calls use the official
+PMS API. `plexamp_url` is a best-effort generated `listen.plex.tv` playback
+link, not an official Plexamp API guarantee.
+
+### `youtube_transfer_queue`
+
+List and drain server-created transfer failure manifests. Actions are `list`,
+`retry`, `retry_all`, and `prune`. Retry accepts only an opaque `manifest_id`,
+uses the original target paths recorded at failure time, and re-checks local
+target policy before transfer. `prune` removes failure manifests whose staging
+directory is gone. The queue never accepts arbitrary filesystem paths.
 
 ### `youtube_identify` parameters
 

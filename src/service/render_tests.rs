@@ -130,3 +130,38 @@ fn render_search_json_has_results_array() {
     assert_eq!(value["query"], "slow pulp");
     assert_eq!(value["results"].as_array().unwrap().len(), 0);
 }
+
+#[test]
+fn plex_playlist_markdown_includes_missing_tracks_and_errors() {
+    let rendered = render_plex_playlist_markdown(&json!({
+        "playlist": "Road Mix",
+        "matched": 1,
+        "added": 0,
+        "already_present": 1,
+        "missing": [
+            { "title": "Ghost Track", "uploader": "No Artist" }
+        ],
+        "errors": ["Plex search failed"]
+    }));
+
+    assert!(rendered.contains("Road Mix: 1 matched, 0 added, 1 already present."));
+    assert!(rendered.contains("Missing tracks:"));
+    assert!(rendered.contains("- Ghost Track (No Artist)"));
+    assert!(rendered.contains("Errors:"));
+    assert!(rendered.contains("- Plex search failed"));
+}
+
+#[test]
+fn transfer_queue_retry_markdown_includes_errors() {
+    let rendered = render_transfer_queue_markdown(&json!({
+        "retried": 1,
+        "completed": 0,
+        "failed": 1,
+        "entries": [],
+        "errors": ["no staged target directories were found"]
+    }));
+
+    assert!(rendered.contains("Retried 1 transfer queue item(s): 0 completed, 1 failed."));
+    assert!(rendered.contains("Errors:"));
+    assert!(rendered.contains("- no staged target directories were found"));
+}

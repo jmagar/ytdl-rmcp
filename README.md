@@ -52,6 +52,8 @@ needs neither pre-installed — the one binary is the whole install.
 | `youtube_probe` | Read-only: resolve title/duration/uploader/format counts without downloading. |
 | `youtube_identify` | Fingerprint local audio with `fpcalc`, return AcoustID/MusicBrainz candidates, preview canonical tags, and optionally write high-confidence tags. |
 | `youtube_stats` | Summarize the download ledger: totals, file kinds, uploaders, and recent entries. |
+| `youtube_plex_playlist` | Build or preview Plex audio playlists from successful transferred audio history. |
+| `youtube_transfer_queue` | List and drain retained-staging transfer failure manifests. |
 
 ### `youtube_download` parameters
 
@@ -121,6 +123,44 @@ Optional keys are attached only when the relevant stage ran:
   failed.
 
 `youtube_probe` takes `urls` and `response_format`.
+
+### `youtube_plex_playlist`
+
+Build or preview Plex audio playlists from successful ytdl-rmcp download history.
+
+Actions:
+
+| Action | Meaning |
+| --- | --- |
+| `list_candidates` | Return audio candidates from history entries where `transferred` is `true`. |
+| `preview` | Resolve selected candidates against Plex without mutating Plex. |
+| `apply` | Add selected candidates to a Plex audio playlist idempotently. |
+
+Candidates are history-derived and audio-only. Failed or retained-staging
+transfers are intentionally excluded.
+
+`apply` can return `plexamp_url`, `plex_web_url`, and
+`playback_link_status`. `plexamp_url` is a best-effort generated
+`listen.plex.tv` playback link, not an official Plexamp API guarantee. The
+regular Plex playlist API calls use the official Plex Media Server API.
+
+### `youtube_transfer_queue`
+
+List and drain server-created transfer failure manifests.
+
+Actions:
+
+| Action | Meaning |
+| --- | --- |
+| `list` | Show pending retained-staging transfer manifests. |
+| `retry` | Retry one manifest by opaque `manifest_id`. |
+| `retry_all` | Retry all pending manifests. |
+| `prune` | Remove manifests whose staging directory is gone. |
+
+The queue never accepts arbitrary filesystem paths. Retry uses the original
+target paths recorded at failure time and re-checks local target policy before
+transfer. Manifests are created by the local server when a transfer fails while
+the staging directory, manifest ID, file list, and original targets still match.
 
 ### `youtube_identify` parameters
 

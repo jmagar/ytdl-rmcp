@@ -87,6 +87,14 @@
       "description": "Summarize ytdl-rmcp download history, totals, file kinds, uploaders, and recent entries."
     },
     {
+      "name": "youtube_plex_playlist",
+      "description": "Build Plex playlists from successfully transferred audio history, preview matches, apply idempotently, and return best-effort Plexamp links."
+    },
+    {
+      "name": "youtube_transfer_queue",
+      "description": "List, retry, retry all, and prune server-created transfer failure manifests for retained staging directories."
+    },
+    {
       "name": "youtube_search_ui",
       "description": "Open an interactive YouTube search UI for selecting videos to probe or download."
     }

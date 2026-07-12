@@ -124,6 +124,89 @@ fn round_trips_a_non_transferred_record() {
 }
 
 #[test]
+fn playlist_candidates_include_only_transferred_audio() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/a\",\"status\":\"ok\",\"title\":\"Song A\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"duration\":12.0,\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Song A\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"duration\":12.0}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:01:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":false,\"total_files\":1,\"total_bytes\":20,\"items\":[{\"url\":\"https://youtu.be/b\",\"status\":\"ok\",\"title\":\"Song B\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\",\"files\":[{\"kind\":\"audio\",\"bytes\":20,\"title\":\"Song B\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:02:00Z\",\"mode\":\"video\",\"target_path\":\"tootie:/video\",\"transferred\":true,\"total_files\":1,\"total_bytes\":30,\"items\":[{\"url\":\"https://youtu.be/c\",\"status\":\"ok\",\"title\":\"Video C\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\",\"files\":[{\"kind\":\"video\",\"bytes\":30,\"title\":\"Video C\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\"}]}]}\n",
+            "not-json\n"
+        ),
+    )
+    .unwrap();
+    let cfg = config_with_history(&history);
+
+    let payload = crate::history::playlist_candidates(&cfg, 25).unwrap();
+
+    assert_eq!(payload.skipped_entries, 1);
+    assert_eq!(payload.candidates.len(), 1);
+    assert_eq!(payload.candidates[0].title, "Song A");
+    assert_eq!(payload.candidates[0].uploader.as_deref(), Some("Artist A"));
+    assert_eq!(payload.candidates[0].video_id.as_deref(), Some("aaa"));
+    assert_eq!(payload.candidates[0].bytes, 10);
+    assert!(!payload.candidates[0].candidate_id.is_empty());
+}
+
+#[test]
+fn playlist_candidates_dedupe_on_normalized_track_identity() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    let line = "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/a\",\"status\":\"ok\",\"title\":\"Song A\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Song A\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n";
+    std::fs::write(&history, format!("{line}{line}")).unwrap();
+    let cfg = config_with_history(&history);
+
+    let payload = crate::history::playlist_candidates(&cfg, 25).unwrap();
+
+    assert_eq!(payload.candidates.len(), 1);
+}
+
+#[test]
+fn playlist_candidates_duplicate_video_id_keeps_newest_entry() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/aaa\",\"status\":\"ok\",\"title\":\"Old Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Old Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:02:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":20,\"items\":[{\"url\":\"https://youtube.com/watch?v=aaa\",\"status\":\"ok\",\"title\":\"New Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":20,\"title\":\"New Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n"
+        ),
+    )
+    .unwrap();
+    let cfg = config_with_history(&history);
+
+    let payload = crate::history::playlist_candidates(&cfg, 25).unwrap();
+
+    assert_eq!(payload.candidates.len(), 1);
+    assert_eq!(payload.candidates[0].title, "New Title");
+    assert_eq!(payload.candidates[0].bytes, 20);
+}
+
+#[test]
+fn playlist_candidates_limit_returns_most_recent_matches() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/a\",\"status\":\"ok\",\"title\":\"Old Song\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Old Song\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:01:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":20,\"items\":[{\"url\":\"https://youtu.be/b\",\"status\":\"ok\",\"title\":\"Middle Song\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\",\"files\":[{\"kind\":\"audio\",\"bytes\":20,\"title\":\"Middle Song\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:02:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":30,\"items\":[{\"url\":\"https://youtu.be/c\",\"status\":\"ok\",\"title\":\"New Song\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\",\"files\":[{\"kind\":\"audio\",\"bytes\":30,\"title\":\"New Song\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\"}]}]}\n"
+        ),
+    )
+    .unwrap();
+    let cfg = config_with_history(&history);
+
+    let payload = crate::history::playlist_candidates(&cfg, 2).unwrap();
+
+    assert_eq!(payload.candidates.len(), 2);
+    assert_eq!(payload.candidates[0].title, "New Song");
+    assert_eq!(payload.candidates[1].title, "Middle Song");
+}
+
+#[test]
 fn malformed_lines_are_skipped_not_panicked() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("downloads.jsonl");

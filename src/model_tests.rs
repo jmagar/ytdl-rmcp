@@ -172,6 +172,15 @@ fn search_input_clamps_limit_to_supported_range() {
 }
 
 #[test]
+fn plex_playlist_input_preserves_zero_and_caps_positive_limits() {
+    let unlimited: PlexPlaylistInput = serde_json::from_str(r#"{"limit":0}"#).unwrap();
+    let high: PlexPlaylistInput = serde_json::from_str(r#"{"limit":9999}"#).unwrap();
+
+    assert_eq!(unlimited.effective_limit(), 0);
+    assert_eq!(high.effective_limit(), MAX_PLAYLIST_LIMIT as usize);
+}
+
+#[test]
 fn enum_strings_match_cli_values() {
     assert_eq!(AudioFormat::M4a.as_str(), "m4a");
     assert_eq!(VideoContainer::Mkv.as_str(), "mkv");

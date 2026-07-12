@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Added a Plex playlist builder for successful transferred audio history, with
+  read-only preview, idempotent apply, and best-effort Plexamp/Plex Web links.
+- Added a transfer queue for retained staging directories after transfer
+  failures, with list/retry/retry-all/prune actions.
+- Extended the MCP app with Playlist and Transfers tabs.
+
 ## [1.0.1](https://github.com/jmagar/ytdl-rmcp/compare/v1.0.0...v1.0.1) (2026-07-11)
 
 
@@ -32,8 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * align ytdl build workflows with rytdl binary ([f3377b5](https://github.com/jmagar/ytdl-rmcp/commit/f3377b55b1d71d3266aa8ce569274463971cbd79))
 * align ytdl npm launcher assets ([e1b392c](https://github.com/jmagar/ytdl-rmcp/commit/e1b392c2e69f332e5beecf12b45d95dc62337840))
 * harden target path migration ([c0af9e7](https://github.com/jmagar/ytdl-rmcp/commit/c0af9e7fcad01d04670e56139b83b740e2ed8094))
-
-## [Unreleased]
 
 ## [1.0.0] - 2026-07-11
 

@@ -4,6 +4,8 @@
 #[path = "history_tests.rs"]
 mod tests;
 
+mod candidates;
+
 use anyhow::{Context, Result};
 use chrono::{SecondsFormat, Utc};
 use fs2::FileExt;
@@ -20,6 +22,8 @@ use crate::config::Config;
 use crate::model::DownloadMode;
 use crate::service::DownloadPayload;
 
+pub(crate) use candidates::{playlist_candidates, render_playlist_candidates_markdown};
+
 fn default_history_path() -> PathBuf {
     bootstrap::project_dirs()
         .map(|d| {
@@ -30,7 +34,7 @@ fn default_history_path() -> PathBuf {
         .unwrap_or_else(|| std::env::temp_dir().join("ytdl-rmcp-state/downloads.jsonl"))
 }
 
-fn history_path(cfg: &Config) -> PathBuf {
+pub(crate) fn history_path(cfg: &Config) -> PathBuf {
     cfg.history_path
         .as_ref()
         .map(PathBuf::from)
@@ -129,10 +133,10 @@ pub(crate) fn append_download(
 /// replaces via rename). Lock acquisition is best-effort: if the lock file can't
 /// be created or locked (e.g. a filesystem without advisory locks), we warn once
 /// and proceed unlocked rather than failing the download.
-struct HistoryLock(Option<std::fs::File>);
+pub(crate) struct HistoryLock(Option<std::fs::File>);
 
 impl HistoryLock {
-    fn acquire(ledger: &Path) -> Self {
+    pub(crate) fn acquire(ledger: &Path) -> Self {
         let lock_path = ledger_sibling(ledger, ".lock");
         match OpenOptions::new()
             .create(true)

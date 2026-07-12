@@ -11,7 +11,10 @@ use rmcp::model::{
 use rmcp::{tool, tool_handler, tool_router, ErrorData, RoleServer, ServerHandler};
 
 use crate::config::Config;
-use crate::model::{DownloadInput, IdentifyInput, ProbeInput, SearchInput, StatsInput};
+use crate::model::{
+    DownloadInput, IdentifyInput, PlexPlaylistInput, ProbeInput, SearchInput, StatsInput,
+    TransferQueueInput,
+};
 use crate::search_app;
 use crate::service;
 
@@ -28,6 +31,22 @@ fn text_tool_result<E: std::fmt::Display>(
 ) -> CallToolResult {
     match result {
         Ok(text) => CallToolResult::success(vec![ContentBlock::text(text)]),
+        Err(e) => error_tool_result(e),
+    }
+}
+
+fn json_text_tool_result<E: std::fmt::Display>(
+    result: std::result::Result<String, E>,
+    meta: rmcp::model::Meta,
+) -> CallToolResult {
+    match result {
+        Ok(text) => {
+            let structured_content = serde_json::from_str(&text).ok();
+            let mut result = CallToolResult::success(vec![ContentBlock::text(text)]);
+            result.structured_content = structured_content;
+            result.meta = Some(meta);
+            result
+        }
         Err(e) => error_tool_result(e),
     }
 }
@@ -238,6 +257,69 @@ impl YtdlServer {
             }
         }
         Ok(text_tool_result(result))
+    }
+
+    /// Build or preview Plex audio playlists from successful transferred audio
+    /// download history. `list_candidates` is read-only; preview/apply share the
+    /// same resolver path as Plex playlist mutation support.
+    #[tool(
+        name = "youtube_plex_playlist",
+        description = "List successful transferred audio history candidates, preview Plex playlist matches, or apply an idempotent Plex playlist update.",
+        meta = search_app::tool_meta(),
+        output_schema = rmcp::handler::server::tool::schema_for_type::<serde_json::Value>()
+    )]
+    async fn youtube_plex_playlist(
+        &self,
+        Parameters(input): Parameters<PlexPlaylistInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_plex_playlist",
+            "tool dispatch start"
+        );
+        let result = service::run_plex_playlist(&self.cfg, input).await;
+        match &result {
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_plex_playlist",
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_plex_playlist", error = %e, "tool dispatch error")
+            }
+        }
+        Ok(json_text_tool_result(result, search_app::tool_meta()))
+    }
+
+    /// List and drain retained staging directories from server-created transfer
+    /// failure manifests. Retry accepts opaque manifest IDs only.
+    #[tool(
+        name = "youtube_transfer_queue",
+        description = "List, retry, retry all, or prune retained-staging transfer failure manifests by opaque manifest ID.",
+        meta = search_app::tool_meta(),
+        output_schema = rmcp::handler::server::tool::schema_for_type::<serde_json::Value>()
+    )]
+    async fn youtube_transfer_queue(
+        &self,
+        Parameters(input): Parameters<TransferQueueInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_transfer_queue",
+            "tool dispatch start"
+        );
+        let result = service::run_transfer_queue(&self.cfg, input).await;
+        match &result {
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_transfer_queue",
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_transfer_queue", error = %e, "tool dispatch error")
+            }
+        }
+        Ok(json_text_tool_result(result, search_app::tool_meta()))
     }
 
     /// Open the interactive YouTube search MCP App. UI-capable hosts render the

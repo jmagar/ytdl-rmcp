@@ -1,5 +1,7 @@
 //! Optional Plex playlist integration for downloaded audio tracks.
 
+mod playlist;
+
 use std::collections::BTreeSet;
 
 use anyhow::{bail, Context, Result};
@@ -10,6 +12,16 @@ use url::Url;
 use crate::config::Config;
 
 const TRACK_TYPE: &str = "10";
+
+#[allow(unused_imports)]
+pub use playlist::{
+    apply_audio_tracks, preview_audio_tracks, PlexPlaybackLinks, PlexPlaylistActionResult,
+};
+
+#[cfg(test)]
+pub(crate) use playlist::{
+    apply_audio_tracks_with_transport, playback_links, preview_audio_tracks_with_transport,
+};
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct PlexPlaylistUpdate {
@@ -22,7 +34,7 @@ pub struct PlexPlaylistUpdate {
     pub errors: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, schemars::JsonSchema, PartialEq)]
 pub struct PlexMissingTrack {
     pub title: String,
     pub uploader: Option<String>,
@@ -43,9 +55,9 @@ pub struct PlexTrackInput {
 }
 
 #[derive(Debug, Clone)]
-struct TrackCandidate {
-    title: String,
-    uploader: Option<String>,
+pub(crate) struct TrackCandidate {
+    pub(crate) title: String,
+    pub(crate) uploader: Option<String>,
 }
 
 pub fn add_downloaded_audio(
@@ -53,34 +65,7 @@ pub fn add_downloaded_audio(
     playlist: &str,
     tracks: &[PlexTrackInput],
 ) -> Result<PlexPlaylistUpdate> {
-    let tracks = dedup_tracks(tracks);
-    if tracks.is_empty() {
-        return Ok(PlexPlaylistUpdate {
-            playlist: playlist.to_string(),
-            playlist_id: None,
-            matched: 0,
-            added: 0,
-            already_present: 0,
-            missing: Vec::new(),
-            errors: Vec::new(),
-        });
-    }
-
-    let base_url = cfg
-        .plex_url
-        .as_deref()
-        .filter(|s| !s.trim().is_empty())
-        .context("YTDLP_PLEX_URL is required when plex_playlist is set")?;
-    let token = cfg
-        .plex_token
-        .as_deref()
-        .filter(|s| !s.trim().is_empty())
-        .context("YTDLP_PLEX_TOKEN is required when plex_playlist is set")?;
-    let mut transport = UreqPlexTransport {
-        base_url: base_url.to_string(),
-        token: token.to_string(),
-    };
-    add_audio_tracks_with_transport(&mut transport, playlist, tracks)
+    apply_audio_tracks(cfg, playlist, tracks).map(PlexPlaylistUpdate::from)
 }
 
 #[cfg(test)]
@@ -89,53 +74,21 @@ fn add_downloaded_audio_with_transport(
     playlist: &str,
     tracks: &[PlexTrackInput],
 ) -> Result<PlexPlaylistUpdate> {
-    let tracks = dedup_tracks(tracks);
-    add_audio_tracks_with_transport(transport, playlist, tracks)
+    apply_audio_tracks_with_transport(transport, playlist, tracks).map(PlexPlaylistUpdate::from)
 }
 
-fn add_audio_tracks_with_transport(
-    transport: &mut impl PlexTransport,
-    playlist: &str,
-    tracks: Vec<TrackCandidate>,
-) -> Result<PlexPlaylistUpdate> {
-    let mut update = PlexPlaylistUpdate {
-        playlist: playlist.to_string(),
-        playlist_id: None,
-        matched: 0,
-        added: 0,
-        already_present: 0,
-        missing: Vec::new(),
-        errors: Vec::new(),
-    };
-
-    if tracks.is_empty() {
-        return Ok(update);
-    }
-
-    let machine_id = machine_identifier(transport)?;
-    let mut state = PlaylistState::resolve(transport, playlist)?;
-
-    for track in tracks {
-        let Some(rating_key) = find_track_rating_key(transport, &track)? else {
-            update.missing.push(PlexMissingTrack {
-                title: track.title,
-                uploader: track.uploader,
-            });
-            continue;
-        };
-        update.matched += 1;
-
-        if state.contains(&rating_key) {
-            update.already_present += 1;
-            continue;
+impl From<PlexPlaylistActionResult> for PlexPlaylistUpdate {
+    fn from(result: PlexPlaylistActionResult) -> Self {
+        Self {
+            playlist: result.playlist,
+            playlist_id: result.playlist_id,
+            matched: result.matched,
+            added: result.added,
+            already_present: result.already_present,
+            missing: result.missing,
+            errors: result.errors,
         }
-
-        state.add_track(transport, playlist, &machine_id, &rating_key)?;
-        update.added += 1;
     }
-
-    update.playlist_id = state.into_id();
-    Ok(update)
 }
 
 /// Tracks whether the target playlist exists yet and which items it already
@@ -146,13 +99,13 @@ fn add_audio_tracks_with_transport(
 /// added item and appends to it thereafter. `existing` is seeded from the live
 /// playlist (when one already exists) and updated as items are added so a
 /// duplicate within the same batch is treated as already-present.
-struct PlaylistState {
+pub(crate) struct PlaylistState {
     id: Option<String>,
     existing: BTreeSet<String>,
 }
 
 impl PlaylistState {
-    fn resolve(transport: &mut impl PlexTransport, playlist: &str) -> Result<Self> {
+    pub(crate) fn resolve(transport: &mut impl PlexTransport, playlist: &str) -> Result<Self> {
         let id = find_playlist_id(transport, playlist)?;
         let existing = match id.as_deref() {
             Some(id) => playlist_item_keys(transport, id)?,
@@ -161,13 +114,17 @@ impl PlaylistState {
         Ok(Self { id, existing })
     }
 
-    fn contains(&self, rating_key: &str) -> bool {
+    pub(crate) fn contains(&self, rating_key: &str) -> bool {
         self.existing.contains(rating_key)
+    }
+
+    pub(crate) fn id(&self) -> Option<&str> {
+        self.id.as_deref()
     }
 
     /// Add `rating_key` to the playlist, creating the playlist first if it does
     /// not exist yet. Records the key as present on success.
-    fn add_track(
+    pub(crate) fn add_track(
         &mut self,
         transport: &mut impl PlexTransport,
         playlist: &str,
@@ -185,7 +142,7 @@ impl PlaylistState {
         Ok(())
     }
 
-    fn into_id(self) -> Option<String> {
+    pub(crate) fn into_id(self) -> Option<String> {
         self.id
     }
 }
@@ -193,7 +150,7 @@ impl PlaylistState {
 /// Collapse the caller's resolved track inputs into the internal candidate list,
 /// dropping empty titles and de-duplicating on a case-insensitive
 /// (title, uploader) key while preserving first-seen order.
-fn dedup_tracks(tracks: &[PlexTrackInput]) -> Vec<TrackCandidate> {
+pub(crate) fn dedup_tracks(tracks: &[PlexTrackInput]) -> Vec<TrackCandidate> {
     let mut candidates = Vec::new();
     let mut seen = BTreeSet::new();
     for track in tracks {
@@ -217,7 +174,7 @@ fn dedup_tracks(tracks: &[PlexTrackInput]) -> Vec<TrackCandidate> {
     candidates
 }
 
-fn machine_identifier(transport: &mut impl PlexTransport) -> Result<String> {
+pub(crate) fn machine_identifier(transport: &mut impl PlexTransport) -> Result<String> {
     let value = transport.get("/identity", &[])?;
     value
         .pointer("/MediaContainer/machineIdentifier")
@@ -282,7 +239,7 @@ fn playlist_item_keys(
 ///
 /// Returns `Ok(None)` when nothing qualifies; the caller records the track as
 /// missing rather than guessing.
-fn find_track_rating_key(
+pub(crate) fn find_track_rating_key(
     transport: &mut impl PlexTransport,
     track: &TrackCandidate,
 ) -> Result<Option<String>> {
@@ -405,15 +362,32 @@ fn redact_url(url: &Url) -> String {
     redacted.to_string()
 }
 
-trait PlexTransport {
+pub(crate) trait PlexTransport {
     fn get(&mut self, path: &str, params: &[(&str, &str)]) -> Result<Value>;
     fn post(&mut self, path: &str, params: &[(&str, &str)]) -> Result<Value>;
     fn put(&mut self, path: &str, params: &[(&str, &str)]) -> Result<()>;
 }
 
-struct UreqPlexTransport {
+pub(crate) struct UreqPlexTransport {
     base_url: String,
     token: String,
+}
+
+pub(crate) fn transport_from_config(cfg: &Config) -> Result<UreqPlexTransport> {
+    let base_url = cfg
+        .plex_url
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .context("YTDLP_PLEX_URL is required for Plex playlist actions")?;
+    let token = cfg
+        .plex_token
+        .as_deref()
+        .filter(|s| !s.trim().is_empty())
+        .context("YTDLP_PLEX_TOKEN is required for Plex playlist actions")?;
+    Ok(UreqPlexTransport {
+        base_url: base_url.to_string(),
+        token: token.to_string(),
+    })
 }
 
 impl UreqPlexTransport {
