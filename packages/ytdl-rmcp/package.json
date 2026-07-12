@@ -1,7 +1,7 @@
 {
   "name": "ytdl-rmcp",
   "version": "1.0.1",
-  "description": "Node launcher for the ytdl-rmcp Rust MCP server and CLI binary.",
+  "description": "Node launcher for the ytdl-rmcp Rust MCP server and rytdl CLI for yt-dlp media workflows.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -25,5 +25,30 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "homepage": "https://github.com/jmagar/ytdl-rmcp#readme",
+  "bugs": {
+    "url": "https://github.com/jmagar/ytdl-rmcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "rmcp",
+    "rust",
+    "cli",
+    "yt-dlp",
+    "youtube",
+    "media-downloader",
+    "ffmpeg",
+    "plex",
+    "metadata",
+    "ssh",
+    "rclone",
+    "homelab",
+    "claude-code",
+    "codex",
+    "gemini",
+    "mcp-apps"
+  ]
 }

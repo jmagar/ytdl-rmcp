@@ -2,8 +2,11 @@
 name = "ytdl-rmcp"
 version = "1.0.1"
 edition = "2021"
-description = "Cross-platform MCP server that downloads media with yt-dlp, tags it, and transfers it to local, SSH, or rclone targets."
+categories = ["command-line-utilities", "development-tools"]
+keywords = ["mcp", "yt-dlp", "youtube", "media", "plex"]
+description = "Rust MCP server and CLI for yt-dlp media search, downloads, metadata tagging, transfer queues, and Plex playlists."
 license = "MIT"
+homepage = "https://github.com/jmagar/ytdl-rmcp#readme"
 repository = "https://github.com/jmagar/ytdl-rmcp"
 default-run = "rytdl"
 build = "build.rs"
