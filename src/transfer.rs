@@ -451,29 +451,7 @@ pub async fn transfer_file_paths(
 }
 
 async fn transfer_local(dir: &Path, dest_path: &LocalPath) -> Result<()> {
-    if which::which("rsync").is_ok() {
-        local_rsync(dir, dest_path).await
-    } else {
-        local_copy(dir, dest_path).await
-    }
-}
-
-async fn local_rsync(dir: &Path, dest_path: &LocalPath) -> Result<()> {
-    let src = format!("{}/", dir.display());
-    let target = format!("{}/", dest_path.as_str().trim_end_matches('/'));
-    let mut cmd = Command::new("rsync");
-    cmd.args(["-a", "--partial", "--human-readable"])
-        .arg(&src)
-        .arg(&target);
-    let out = run_capped(&mut cmd, None, Some(STDERR_CAP)).await?;
-    if !out.status.success() {
-        bail!(
-            "local rsync failed (exit {:?}): {}",
-            out.status.code(),
-            command_error((out.stderr.as_str(), out.stdout.as_slice()))
-        );
-    }
-    Ok(())
+    local_copy(dir, dest_path).await
 }
 
 async fn local_copy(dir: &Path, dest_path: &LocalPath) -> Result<()> {

@@ -216,6 +216,12 @@ function renderPlaylistCandidates(payload) {
 
 function renderPlaylistResult(payload) {
   els.playlistResults.querySelector(".playlist-summary")?.remove();
+  const errors = payload.errors || [];
+  const missing = payload.missing || [];
+  const detailRows = [
+    errors.length ? `<div class="meta error">Errors: ${escapeHtml(errors.join("; "))}</div>` : "",
+    missing.length ? `<div class="meta">Missing: ${escapeHtml(missing.map((track) => track.title || "Unknown track").join("; "))}</div>` : "",
+  ].join("");
   const linkButtons = payload.plexamp_url && isAllowedExternalUrl(payload.plexamp_url)
     ? `<div class="actions">
         <button type="button" data-open-url="${escapeHtml(payload.plexamp_url)}">Open in Plexamp</button>
@@ -228,6 +234,7 @@ function renderPlaylistResult(payload) {
         <h2 class="title">${escapeHtml(payload.playlist || "Plex playlist")}</h2>
         <div class="meta">${escapeHtml(payload.matched || 0)} matched, ${escapeHtml(payload.added || 0)} added, ${escapeHtml(payload.already_present || 0)} already present, ${(payload.missing || []).length} missing</div>
         <div class="meta">${escapeHtml(payload.playback_link_status || "")}</div>
+        ${detailRows}
       </div>
       ${linkButtons}
     </div>
@@ -262,7 +269,7 @@ async function previewPlaylist() {
     response_format: "json",
   }, "Playlist preview");
   renderPlaylistResult(payload);
-  setStatus("playlist", "Preview complete.");
+  setStatus("playlist", (payload.errors || []).length ? "Preview finished with errors." : "Preview complete.");
 }
 
 async function applyPlaylist() {
@@ -281,7 +288,7 @@ async function applyPlaylist() {
     response_format: "json",
   }, "Playlist apply");
   renderPlaylistResult(payload);
-  setStatus("playlist", "Playlist updated.");
+  setStatus("playlist", (payload.errors || []).length ? "Apply finished with errors." : "Apply complete. Review the summary.");
 }
 
 function renderTransfers(payload) {
@@ -316,21 +323,32 @@ async function loadTransfers() {
 
 async function retryTransfer(manifest_id) {
   setStatus("transfers", "Retrying transfer...");
-  await callTool("youtube_transfer_queue", {
+  const payload = await callTool("youtube_transfer_queue", {
     action: "retry",
     manifest_id,
     response_format: "json",
   }, "Transfer retry");
   await loadTransfers();
+  renderTransferRetryStatus(payload);
 }
 
 async function retryAllTransfers() {
   setStatus("transfers", "Retrying all transfers...");
-  await callTool("youtube_transfer_queue", {
+  const payload = await callTool("youtube_transfer_queue", {
     action: "retry_all",
     response_format: "json",
   }, "Transfer retry all");
   await loadTransfers();
+  renderTransferRetryStatus(payload);
+}
+
+function renderTransferRetryStatus(payload) {
+  const errors = payload.errors || [];
+  if (payload.failed) {
+    setStatus("transfers", `Retry failed for ${payload.failed} transfer(s): ${errors.join("; ") || "see queued item details"}`);
+  } else {
+    setStatus("transfers", `Retry complete: ${payload.completed || 0} transfer(s) completed.`);
+  }
 }
 
 async function pruneTransfers() {

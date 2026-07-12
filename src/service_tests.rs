@@ -6,7 +6,10 @@ use std::{
 
 use super::*;
 use crate::identify::{IdentifyPayload, IdentifyResult, RetagPreview, TagWriteResult};
-use crate::model::{AudioFormat, DownloadMode, ResponseFormat, SearchInput, Urls, VideoContainer};
+use crate::model::{
+    AudioFormat, DownloadMode, PlexPlaylistAction, PlexPlaylistInput, ResponseFormat, SearchInput,
+    Urls, VideoContainer,
+};
 
 fn test_config() -> Config {
     Config {
@@ -590,6 +593,50 @@ async fn auto_retag_audio_paths_writes_when_acoustid_is_configured() {
     assert_eq!(summary["matched"], 1);
     assert_eq!(summary["written"], 1);
     assert_eq!(summary["errors"], 0);
+}
+
+#[tokio::test]
+async fn run_plex_playlist_resolves_candidate_ids_independent_of_limit() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/a\",\"status\":\"ok\",\"title\":\"Old Song\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Old Song\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:01:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":20,\"items\":[{\"url\":\"https://youtu.be/b\",\"status\":\"ok\",\"title\":\"Middle Song\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\",\"files\":[{\"kind\":\"audio\",\"bytes\":20,\"title\":\"Middle Song\",\"uploader\":\"Artist B\",\"video_id\":\"bbb\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:02:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":30,\"items\":[{\"url\":\"https://youtu.be/c\",\"status\":\"ok\",\"title\":\"New Song\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\",\"files\":[{\"kind\":\"audio\",\"bytes\":30,\"title\":\"New Song\",\"uploader\":\"Artist C\",\"video_id\":\"ccc\"}]}]}\n"
+        ),
+    )
+    .unwrap();
+    let mut cfg = test_config();
+    cfg.history_path = Some(history.display().to_string());
+    let old_candidate_id = crate::history::playlist_candidates(&cfg, 0)
+        .unwrap()
+        .candidates
+        .into_iter()
+        .find(|candidate| candidate.title == "Old Song")
+        .unwrap()
+        .candidate_id;
+
+    let result = run_plex_playlist(
+        &Arc::new(cfg),
+        PlexPlaylistInput {
+            action: PlexPlaylistAction::Preview,
+            playlist: None,
+            candidate_ids: vec![old_candidate_id],
+            limit: 1,
+            response_format: ResponseFormat::Json,
+        },
+    )
+    .await;
+
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("YTDLP_PLEX_URL is required"),
+        "candidate should be resolved before Plex config is required"
+    );
 }
 
 #[cfg(unix)]

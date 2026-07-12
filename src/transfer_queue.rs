@@ -2,9 +2,10 @@
 #[path = "transfer_queue_tests.rs"]
 mod tests;
 
+use std::collections::BTreeSet;
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use anyhow::{bail, Context, Result};
 use chrono::{SecondsFormat, Utc};
@@ -144,23 +145,7 @@ pub(crate) async fn retry_one(
         entries: Vec::new(),
         errors: Vec::new(),
     };
-    match retry_entry(cfg, manifest_id, keep_local).await {
-        Ok(entry) if entry.status == "completed" => {
-            result.completed = 1;
-            result.entries.push(entry);
-        }
-        Ok(entry) => {
-            result.failed = 1;
-            result.errors.extend(entry.last_error.iter().cloned());
-            result.entries.push(entry);
-        }
-        Err(error) => {
-            result.failed = 1;
-            result
-                .errors
-                .push(redact_transfer_error(&error.to_string()));
-        }
-    }
+    record_retry_outcome(&mut result, retry_entry(cfg, manifest_id, keep_local).await);
     Ok(result)
 }
 
@@ -182,25 +167,35 @@ pub(crate) async fn retry_all(cfg: &Config, keep_local: bool) -> Result<Transfer
     };
     for manifest_id in ids {
         result.retried += 1;
-        match retry_entry(cfg, &manifest_id, keep_local).await {
-            Ok(entry) if entry.status == "completed" => {
-                result.completed += 1;
-                result.entries.push(entry);
-            }
-            Ok(entry) => {
-                result.failed += 1;
-                result.errors.extend(entry.last_error.iter().cloned());
-                result.entries.push(entry);
-            }
-            Err(error) => {
-                result.failed += 1;
-                result
-                    .errors
-                    .push(redact_transfer_error(&error.to_string()));
-            }
-        }
+        record_retry_outcome(
+            &mut result,
+            retry_entry(cfg, &manifest_id, keep_local).await,
+        );
     }
     Ok(result)
+}
+
+fn record_retry_outcome(
+    result: &mut TransferQueueDrainResult,
+    outcome: Result<TransferQueueEntry>,
+) {
+    match outcome {
+        Ok(entry) if entry.status == "completed" => {
+            result.completed += 1;
+            result.entries.push(entry);
+        }
+        Ok(entry) => {
+            result.failed += 1;
+            result.errors.extend(entry.last_error.iter().cloned());
+            result.entries.push(entry);
+        }
+        Err(error) => {
+            result.failed += 1;
+            result
+                .errors
+                .push(redact_transfer_error(&error.to_string()));
+        }
+    }
 }
 
 pub(crate) fn queue_dir(cfg: &Config) -> PathBuf {
@@ -314,13 +309,31 @@ async fn retry_entry(
         }
         entry.attempts = entry.attempts.saturating_add(1);
         entry.updated_at = timestamp_now();
+        let staging_path = PathBuf::from(&entry.staging_path);
+        if !staging_path.is_dir() {
+            mark_entry_pending(
+                &mut entry,
+                format!("staging directory no longer exists for manifest {manifest_id}"),
+            );
+            write_manifest(&entry)?;
+            return Ok(entry);
+        }
         entry.status = "running".to_string();
         write_manifest(&entry)?;
         entry
     };
     let staging_path = PathBuf::from(&entry.staging_path);
-    if !staging_path.is_dir() {
-        bail!("staging directory no longer exists for manifest {manifest_id}");
+    let validation_entry = entry.clone();
+    let validation_staging = staging_path.clone();
+    if let Err(error) = tokio::task::spawn_blocking(move || {
+        validate_staged_files(&validation_entry, &validation_staging)
+    })
+    .await?
+    {
+        let _lock = QueueLock::acquire(&queue_dir)?;
+        mark_entry_pending(&mut entry, error.to_string());
+        write_manifest(&entry)?;
+        return Ok(entry);
     }
 
     match drain_entry(cfg, &entry, &staging_path).await {
@@ -343,14 +356,103 @@ async fn retry_entry(
         }
         Err(error) => {
             let _lock = QueueLock::acquire(&queue_dir)?;
-            let redacted = redact_transfer_error(&error.to_string());
-            entry.status = "pending".to_string();
-            entry.updated_at = timestamp_now();
-            entry.last_error = Some(redacted.clone());
+            mark_entry_pending(&mut entry, error.to_string());
             write_manifest(&entry)?;
             Ok(entry)
         }
     }
+}
+
+fn mark_entry_pending(entry: &mut TransferQueueEntry, error: String) {
+    entry.status = "pending".to_string();
+    entry.updated_at = timestamp_now();
+    entry.last_error = Some(redact_transfer_error(&error));
+}
+
+fn validate_staged_files(entry: &TransferQueueEntry, staging_path: &Path) -> Result<()> {
+    if entry.files.is_empty() {
+        bail!("transfer queue manifest does not record any staged files");
+    }
+    let target_kinds: BTreeSet<&str> = entry
+        .targets
+        .iter()
+        .map(|target| target.kind.as_str())
+        .collect();
+    let recorded = recorded_file_set(entry, &target_kinds)?;
+    let actual = actual_file_set(staging_path)?;
+    if recorded != actual {
+        let missing = path_set_preview(recorded.difference(&actual));
+        let extra = path_set_preview(actual.difference(&recorded));
+        bail!("staged files no longer match transfer queue manifest: missing=[{missing}], extra=[{extra}]");
+    }
+    Ok(())
+}
+
+fn recorded_file_set(
+    entry: &TransferQueueEntry,
+    target_kinds: &BTreeSet<&str>,
+) -> Result<BTreeSet<PathBuf>> {
+    let mut files = BTreeSet::new();
+    for file in &entry.files {
+        let path = PathBuf::from(file);
+        ensure_relative_manifest_path(&path)?;
+        let Some(kind) = path.components().next().and_then(|part| match part {
+            Component::Normal(kind) => kind.to_str(),
+            _ => None,
+        }) else {
+            bail!("transfer queue manifest contains an invalid staged file path");
+        };
+        if !target_kinds.contains(kind) {
+            bail!("transfer queue manifest records {kind} file without a matching transfer target");
+        }
+        files.insert(path);
+    }
+    Ok(files)
+}
+
+fn actual_file_set(staging_path: &Path) -> Result<BTreeSet<PathBuf>> {
+    let mut files = BTreeSet::new();
+    collect_staged_files(staging_path, staging_path, &mut files)?;
+    Ok(files)
+}
+
+fn path_set_preview<'a>(paths: impl Iterator<Item = &'a PathBuf>) -> String {
+    paths
+        .take(5)
+        .map(|path| path.display().to_string())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn collect_staged_files(root: &Path, dir: &Path, files: &mut BTreeSet<PathBuf>) -> Result<()> {
+    for entry in
+        fs::read_dir(dir).with_context(|| format!("read staged directory {}", dir.display()))?
+    {
+        let path = entry?.path();
+        if path.is_dir() {
+            collect_staged_files(root, &path, files)?;
+        } else if path.is_file() {
+            files.insert(
+                path.strip_prefix(root)
+                    .with_context(|| format!("relativize staged file {}", path.display()))?
+                    .to_path_buf(),
+            );
+        }
+    }
+    Ok(())
+}
+
+fn ensure_relative_manifest_path(path: &Path) -> Result<()> {
+    if path.is_absolute() {
+        bail!("transfer queue manifest contains an absolute staged file path");
+    }
+    for component in path.components() {
+        match component {
+            Component::Normal(_) => {}
+            _ => bail!("transfer queue manifest contains an unsafe staged file path"),
+        }
+    }
+    Ok(())
 }
 
 async fn drain_entry(cfg: &Config, entry: &TransferQueueEntry, staging_path: &Path) -> Result<()> {
@@ -441,7 +543,29 @@ fn read_manifest(path: &Path) -> Result<TransferQueueEntry> {
             entry.version
         );
     }
+    validate_manifest_entry(&entry)?;
     Ok(entry)
+}
+
+fn validate_manifest_entry(entry: &TransferQueueEntry) -> Result<()> {
+    match entry.status.as_str() {
+        "pending" | "running" | "completed" => {}
+        _ => bail!("transfer queue manifest contains an invalid status"),
+    }
+    if entry.targets.is_empty() {
+        bail!("transfer queue manifest must contain at least one target");
+    }
+    let mut kinds = BTreeSet::new();
+    for target in &entry.targets {
+        match target.kind.as_str() {
+            "audio" | "video" => {}
+            _ => bail!("transfer queue manifest contains an unsupported target kind"),
+        }
+        if !kinds.insert(target.kind.as_str()) {
+            bail!("transfer queue manifest contains duplicate target kinds");
+        }
+    }
+    Ok(())
 }
 
 fn manifest_id(staging_path: &Path, created_at: &str) -> String {

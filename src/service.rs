@@ -677,7 +677,12 @@ pub async fn run_plex_playlist(cfg: &Arc<Config>, input: PlexPlaylistInput) -> R
                 .clone()
                 .or_else(|| cfg.plex_playlist.clone())
                 .unwrap_or_else(|| crate::config::DEFAULT_PLEX_PLAYLIST.to_string());
-            let candidates = crate::history::playlist_candidates(cfg, input.effective_limit())?;
+            let candidate_limit = if input.candidate_ids.is_empty() {
+                input.effective_limit()
+            } else {
+                0
+            };
+            let candidates = crate::history::playlist_candidates(cfg, candidate_limit)?;
             let wanted: std::collections::BTreeSet<&str> =
                 input.candidate_ids.iter().map(String::as_str).collect();
             let tracks: Vec<crate::plex::PlexTrackInput> = candidates
@@ -691,6 +696,19 @@ pub async fn run_plex_playlist(cfg: &Arc<Config>, input: PlexPlaylistInput) -> R
                     uploader: candidate.uploader.clone(),
                 })
                 .collect();
+            if !wanted.is_empty() && tracks.len() != wanted.len() {
+                let found: std::collections::BTreeSet<&str> = candidates
+                    .candidates
+                    .iter()
+                    .map(|candidate| candidate.candidate_id.as_str())
+                    .collect();
+                let missing = wanted
+                    .difference(&found)
+                    .copied()
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                bail!("unknown playlist candidate ID(s): {missing}");
+            }
             let cfg = Arc::clone(cfg);
             let action = input.action;
             let result = tokio::task::spawn_blocking(move || match action {

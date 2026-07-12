@@ -1,6 +1,6 @@
 # Download Workflow
 
-The `youtube_download` tool orchestrates the full media pipeline: resolve tools, download via yt-dlp, embed metadata, organize files, transfer to remotes, append history, and sync Plex playlists.
+The `youtube_download` tool orchestrates the full media pipeline: resolve tools, download via yt-dlp, embed metadata, organize files, transfer to local/SSH/rclone targets, append history, and sync Plex playlists.
 
 ## Entry point
 
@@ -21,15 +21,15 @@ compatibility, but new integrations should use `target_path` and
 
 [`service::run_download`](../../src/service.rs) drives the workflow:
 
-1. **Resolve external tools** — `bootstrap::ensure_tools` caches yt-dlp + ffmpeg per process
+1. **Resolve external tools** — `service::ensure_tools` calls `bootstrap::ensure` and caches yt-dlp + ffmpeg per process
 2. **Prepare directories** — Create staging (tempfile) and archive (`project_dirs()`) dirs off-reactor
-3. **Parse transfer target** — `TransferTarget::parse` validates remote spec and destination paths
+3. **Parse transfer target** — `TransferTarget::parse_targets` validates local, SSH, and rclone target paths
 4. **Download each URL** — Loop over URLs (cleaning mix/radio params via [`urls::strip_mix_params`](../../src/urls.rs)):
    - `downloader::fetch` runs yt-dlp with `--print` JSON output
    - Metadata embedded via ffmpeg (title/artist/album/date + cover art)
    - Files organized as `Artist/Title [id].ext`
    - Optional auto-retag via AcoustID when `YTDLP_ACOUSTID_CLIENT_KEY` is set
-5. **Transfer to remote** — `transfer::transfer_to_target` syncs each produced audio/video subtree
+5. **Transfer to target** — `transfer::transfer_to_target` syncs each produced audio/video subtree
 6. **Record transfer queue manifest** — On transfer failure, `transfer_queue.rs` writes a server-created manifest while retained staging, manifest IDs, files, and original targets still coexist
 7. **Append history** — JSONL entry written to `YTDLP_HISTORY_PATH` with file lock
 8. **Sync Plex playlist** — Optional Plex add (fails soft, doesn't fail download)
@@ -51,12 +51,14 @@ Output is parsed from yt-dlp's `--print` JSON into `ItemResult` structs (file pa
 
 ## Transfer phase
 
-[`transfer.rs`](../../src/transfer.rs) runs rsync or scp per platform:
+[`transfer.rs`](../../src/transfer.rs) handles local copies, rclone remotes, and SSH transfers:
 
-- **rsync** — Preferred when available: `rsync --protect-args -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new"`
-- **scp** — Fallback for Windows or hosts without rsync: `scp -o BatchMode=yes -o StrictHostKeyChecking=accept-new`
+- **Local** — Copies to an allowed local filesystem target when `YTDLP_ALLOW_LOCAL_TARGETS=true`
+- **rclone** — Uses `rclone copy` for explicit `rclone:remote:path` targets
+- **rsync** — Preferred for SSH when available: `rsync --protect-args -e "ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new"`
+- **scp** — SSH fallback for Windows or hosts without rsync: `scp -o BatchMode=yes -o StrictHostKeyChecking=accept-new`
 - **Remote dirs** — Created via `ssh mkdir -p` before transfer
-- **Failures** — Local staging copies are kept for retry, errors are redacted, and a transfer queue manifest is written by the server
+- **Failures** — Local staging copies are kept for retry, and a transfer queue manifest is written by the server with a redacted queue error
 
 `youtube_transfer_queue` lists and drains those retained-staging manifests.
 Retry accepts opaque manifest IDs only, re-parses the original target paths,
@@ -64,27 +66,45 @@ and re-checks `YTDLP_ALLOW_LOCAL_TARGETS` before any local transfer.
 
 ## History and stats
 
-Every successful download appends a JSONL entry to `YTDLP_HISTORY_PATH` (default: `~/.local/state/ytdl-mcp/downloads.jsonl`):
+Every download attempt appends a JSONL entry to `YTDLP_HISTORY_PATH` (default: `~/.local/state/ytdl-mcp/downloads.jsonl`):
 
 ```json
 {
-  "timestamp": "2025-01-07T09:00:00Z",
+  "timestamp": "2026-07-12T09:00:00Z",
   "mode": "audio",
-  "remote": "tootie",
-  "audio_dest": "/mnt/user/data/media/music/yt-dlp",
-  "video_dest": null,
+  "target_path": "rclone:gdrive:/Music/ytdl",
+  "destination": "rclone:gdrive:/Music/ytdl",
+  "destinations": [
+    {
+      "kind": "audio",
+      "target_path": "rclone:gdrive:/Music/ytdl",
+      "dest_path": "rclone:gdrive:/Music/ytdl"
+    }
+  ],
+  "transferred": true,
+  "transfer_error": null,
+  "partial_items": 0,
+  "failed_items": 0,
+  "total_files": 1,
+  "total_bytes": 12345,
   "items": [
     {
       "url": "https://youtube.com/watch?v=...",
-      "id": "...",
       "title": "...",
-      "uploader": "...",
-      "files": ["Artist/Title [id].mp3"],
-      "bytes": 12345,
-      "error": null
+      "status": "ok",
+      "files": [
+        {
+          "name": "Artist/Title [id].mp3",
+          "kind": "audio",
+          "bytes": 12345,
+          "title": "Title",
+          "uploader": "Artist",
+          "video_id": "id",
+          "duration": 210.0
+        }
+      ]
     }
-  ],
-  "transfer_status": "success"
+  ]
 }
 ```
 
@@ -113,6 +133,6 @@ See [`plex.rs`](../../src/plex.rs) for the Plex client implementation.
 ## Error handling
 
 - **Partial failures** — Individual URL errors are reported in the payload without failing the whole batch
-- **Transfer failures** — Local staging preserved, manifest created for drain, and transfer errors redacted before persistence/rendering
+- **Transfer failures** — Local staging preserved, a manifest is created for drain, and queue manifest/retry errors are redacted before queue persistence/rendering. The download payload and history preserve the original transfer error for diagnostics.
 - **Plex failures** — Logged but don't fail the download
 - **Bootstrap failures** — Tool resolution errors fail the download immediately (no tools, no work)

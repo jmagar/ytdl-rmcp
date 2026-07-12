@@ -35,6 +35,22 @@ fn text_tool_result<E: std::fmt::Display>(
     }
 }
 
+fn json_text_tool_result<E: std::fmt::Display>(
+    result: std::result::Result<String, E>,
+    meta: rmcp::model::Meta,
+) -> CallToolResult {
+    match result {
+        Ok(text) => {
+            let structured_content = serde_json::from_str(&text).ok();
+            let mut result = CallToolResult::success(vec![ContentBlock::text(text)]);
+            result.structured_content = structured_content;
+            result.meta = Some(meta);
+            result
+        }
+        Err(e) => error_tool_result(e),
+    }
+}
+
 /// Like [`text_tool_result`], but for a structured payload backing an MCP App:
 /// the success result carries the pretty-printed JSON as text content plus
 /// `structured_content` and the supplied `meta` (the App resource pointer). The
@@ -249,7 +265,8 @@ impl YtdlServer {
     #[tool(
         name = "youtube_plex_playlist",
         description = "List successful transferred audio history candidates, preview Plex playlist matches, or apply an idempotent Plex playlist update.",
-        meta = search_app::tool_meta()
+        meta = search_app::tool_meta(),
+        output_schema = rmcp::handler::server::tool::schema_for_type::<serde_json::Value>()
     )]
     async fn youtube_plex_playlist(
         &self,
@@ -271,7 +288,7 @@ impl YtdlServer {
                 tracing::warn!(service = "ytdl-rmcp", tool = "youtube_plex_playlist", error = %e, "tool dispatch error")
             }
         }
-        Ok(text_tool_result(result))
+        Ok(json_text_tool_result(result, search_app::tool_meta()))
     }
 
     /// List and drain retained staging directories from server-created transfer
@@ -279,7 +296,8 @@ impl YtdlServer {
     #[tool(
         name = "youtube_transfer_queue",
         description = "List, retry, retry all, or prune retained-staging transfer failure manifests by opaque manifest ID.",
-        meta = search_app::tool_meta()
+        meta = search_app::tool_meta(),
+        output_schema = rmcp::handler::server::tool::schema_for_type::<serde_json::Value>()
     )]
     async fn youtube_transfer_queue(
         &self,
@@ -301,7 +319,7 @@ impl YtdlServer {
                 tracing::warn!(service = "ytdl-rmcp", tool = "youtube_transfer_queue", error = %e, "tool dispatch error")
             }
         }
-        Ok(text_tool_result(result))
+        Ok(json_text_tool_result(result, search_app::tool_meta()))
     }
 
     /// Open the interactive YouTube search MCP App. UI-capable hosts render the

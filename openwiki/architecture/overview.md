@@ -6,7 +6,7 @@ ytdl-mcp is a Rust-based MCP server built on the [`rmcp`](https://crates.io/crat
 
 The server implements `rmcp::ServerHandler` via the `YtdlServer` struct in [`src/mcp.rs`](../../src/mcp.rs). Tools are declared with `#[tool]` macros and dispatched through `#[tool_router]`:
 
-- **`youtube_download`** — Orchestrates download, metadata embedding, and SSH transfer (backed by [`service::run_download`](../../src/service.rs))
+- **`youtube_download`** — Orchestrates download, metadata embedding, and local/SSH/rclone target transfer (backed by [`service::run_download`](../../src/service.rs))
 - **`youtube_search`** — Queries YouTube via yt-dlp and returns URLs (backed by [`service::run_search`](../../src/service.rs))
 - **`youtube_search_ui`** — Serves an MCP App HTML resource for interactive search (backed by [`search_app.rs`](../../src/search_app.rs))
 - **`youtube_probe`** — Resolves metadata without downloading media (backed by [`service::run_probe`](../../src/service.rs))
@@ -30,7 +30,7 @@ The server implements `rmcp::ServerHandler` via the `YtdlServer` struct in [`src
 | [`service/retag.rs`](../../src/service/retag.rs) | AcoustID auto-retagging for downloaded audio |
 | [`downloader.rs`](../../src/downloader.rs) | yt-dlp subprocess runner, output parsing, and `fetch` orchestration |
 | [`downloader/probe.rs`](../../src/downloader/probe.rs) | Metadata-only yt-dlp queries (no media download) |
-| [`transfer.rs`](../../src/transfer.rs) | rsync/scp subprocess wrapper with `ensure_remote_dir` |
+| [`transfer.rs`](../../src/transfer.rs) | Local, SSH, and rclone target parsing plus transfer execution |
 | [`transfer_queue.rs`](../../src/transfer_queue.rs) | Server-created transfer failure manifests and opaque-ID drain retries |
 | [`history.rs`](../../src/history.rs) | JSONL download ledger with rotation and `youtube_stats` aggregation |
 | [`history/candidates.rs`](../../src/history/candidates.rs) | Successful transferred audio history projected into stable Plex playlist candidates |

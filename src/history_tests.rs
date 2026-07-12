@@ -164,6 +164,27 @@ fn playlist_candidates_dedupe_on_normalized_track_identity() {
 }
 
 #[test]
+fn playlist_candidates_duplicate_video_id_keeps_newest_entry() {
+    let dir = tempfile::tempdir().unwrap();
+    let history = dir.path().join("downloads.jsonl");
+    std::fs::write(
+        &history,
+        concat!(
+            "{\"timestamp\":\"2026-07-12T01:00:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":10,\"items\":[{\"url\":\"https://youtu.be/aaa\",\"status\":\"ok\",\"title\":\"Old Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":10,\"title\":\"Old Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n",
+            "{\"timestamp\":\"2026-07-12T01:02:00Z\",\"mode\":\"audio\",\"target_path\":\"tootie:/music\",\"transferred\":true,\"total_files\":1,\"total_bytes\":20,\"items\":[{\"url\":\"https://youtube.com/watch?v=aaa\",\"status\":\"ok\",\"title\":\"New Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\",\"files\":[{\"kind\":\"audio\",\"bytes\":20,\"title\":\"New Title\",\"uploader\":\"Artist A\",\"video_id\":\"aaa\"}]}]}\n"
+        ),
+    )
+    .unwrap();
+    let cfg = config_with_history(&history);
+
+    let payload = crate::history::playlist_candidates(&cfg, 25).unwrap();
+
+    assert_eq!(payload.candidates.len(), 1);
+    assert_eq!(payload.candidates[0].title, "New Title");
+    assert_eq!(payload.candidates[0].bytes, 20);
+}
+
+#[test]
 fn playlist_candidates_limit_returns_most_recent_matches() {
     let dir = tempfile::tempdir().unwrap();
     let history = dir.path().join("downloads.jsonl");
