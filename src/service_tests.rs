@@ -489,7 +489,8 @@ async fn run_download_json_retains_staging_when_transfer_fails() {
         ..download_input(Urls::One("https://www.youtube.com/watch?v=abc123".into()))
     };
 
-    let output = run_download(&Arc::new(cfg), &ToolsCache::default(), input)
+    let cfg = Arc::new(cfg);
+    let output = run_download(&cfg, &ToolsCache::default(), input)
         .await
         .unwrap();
     let payload: serde_json::Value = serde_json::from_str(&output).unwrap();
@@ -519,6 +520,14 @@ async fn run_download_json_retains_staging_when_transfer_fails() {
     // state is reflected at the payload level (transferred:false + staging_kept_at).
     assert_eq!(payload["items"][0]["status"], "ok");
     assert_eq!(payload["items"][0]["files"][0]["kind"], "video");
+
+    let queue = crate::transfer_queue::list_queue(&cfg).unwrap();
+    assert_eq!(queue.entries.len(), 1);
+    assert!(queue.entries[0].manifest_id.starts_with("tq_"));
+    assert_eq!(queue.entries[0].status, "pending");
+    assert_eq!(queue.entries[0].staging_path, kept);
+    assert_eq!(queue.entries[0].targets[0].kind, "video");
+    assert_eq!(queue.entries[0].targets[0].target_path, "media:/video");
 
     // History records the attempt with transferred:false.
     let lines = std::fs::read_to_string(&history).unwrap();

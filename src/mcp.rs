@@ -13,6 +13,7 @@ use rmcp::{tool, tool_handler, tool_router, ErrorData, RoleServer, ServerHandler
 use crate::config::Config;
 use crate::model::{
     DownloadInput, IdentifyInput, PlexPlaylistInput, ProbeInput, SearchInput, StatsInput,
+    TransferQueueInput,
 };
 use crate::search_app;
 use crate::service;
@@ -268,6 +269,36 @@ impl YtdlServer {
             ),
             Err(e) => {
                 tracing::warn!(service = "ytdl-rmcp", tool = "youtube_plex_playlist", error = %e, "tool dispatch error")
+            }
+        }
+        Ok(text_tool_result(result))
+    }
+
+    /// List and drain retained staging directories from server-created transfer
+    /// failure manifests. Retry accepts opaque manifest IDs only.
+    #[tool(
+        name = "youtube_transfer_queue",
+        description = "List, retry, retry all, or prune retained-staging transfer failure manifests by opaque manifest ID.",
+        meta = search_app::tool_meta()
+    )]
+    async fn youtube_transfer_queue(
+        &self,
+        Parameters(input): Parameters<TransferQueueInput>,
+    ) -> Result<CallToolResult, ErrorData> {
+        tracing::info!(
+            service = "ytdl-rmcp",
+            tool = "youtube_transfer_queue",
+            "tool dispatch start"
+        );
+        let result = service::run_transfer_queue(&self.cfg, input).await;
+        match &result {
+            Ok(_) => tracing::info!(
+                service = "ytdl-rmcp",
+                tool = "youtube_transfer_queue",
+                "tool dispatch success"
+            ),
+            Err(e) => {
+                tracing::warn!(service = "ytdl-rmcp", tool = "youtube_transfer_queue", error = %e, "tool dispatch error")
             }
         }
         Ok(text_tool_result(result))

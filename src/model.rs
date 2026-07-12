@@ -375,6 +375,36 @@ pub struct PlexPlaylistInput {
     pub response_format: ResponseFormat,
 }
 
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+#[serde(rename_all = "snake_case")]
+pub enum TransferQueueAction {
+    List,
+    Retry,
+    RetryAll,
+    Prune,
+}
+
+fn default_transfer_queue_action() -> TransferQueueAction {
+    TransferQueueAction::List
+}
+
+/// Input for `youtube_transfer_queue`.
+#[derive(Debug, Clone, Deserialize, JsonSchema)]
+pub struct TransferQueueInput {
+    /// Action to run: list, retry one manifest, retry all manifests, or prune missing staging dirs.
+    #[serde(default = "default_transfer_queue_action")]
+    pub action: TransferQueueAction,
+    /// Opaque transfer queue manifest ID for `retry`.
+    #[serde(default)]
+    pub manifest_id: Option<String>,
+    /// Keep the retained staging directory after a successful retry.
+    #[serde(default)]
+    pub keep_local: bool,
+    /// 'markdown' (human-readable) or 'json' (machine-readable).
+    #[serde(default)]
+    pub response_format: ResponseFormat,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema, PartialEq)]
 pub struct SearchResultItem {
     pub title: String,

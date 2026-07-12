@@ -39,13 +39,14 @@ fn test_config() -> Config {
 
 /// Every tool this server exposes. The dispatch surface is the source of truth
 /// for the MCP contract, so the test pins the exact set.
-const EXPECTED_TOOLS: [&str; 7] = [
+const EXPECTED_TOOLS: [&str; 8] = [
     "youtube_download",
     "youtube_probe",
     "youtube_identify",
     "youtube_search",
     "youtube_stats",
     "youtube_plex_playlist",
+    "youtube_transfer_queue",
     "youtube_search_ui",
 ];
 
@@ -68,7 +69,7 @@ fn youtube_search_ui_advertises_app_metadata_and_output_schema() {
 }
 
 #[test]
-fn tool_router_advertises_all_seven_tools() {
+fn tool_router_advertises_all_eight_tools() {
     let tools = YtdlServer::tool_router().list_all();
     let mut names: Vec<&str> = tools.iter().map(|tool| tool.name.as_ref()).collect();
     names.sort_unstable();
@@ -78,7 +79,7 @@ fn tool_router_advertises_all_seven_tools() {
 
     assert_eq!(
         names, expected,
-        "the dispatch surface must advertise exactly the seven MCP tools"
+        "the dispatch surface must advertise exactly the eight MCP tools"
     );
 
     // Every advertised tool must carry an input schema so a client can call it.

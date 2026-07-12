@@ -17,6 +17,7 @@ mod search_app;
 mod service;
 mod setup;
 mod transfer;
+mod transfer_queue;
 mod urls;
 mod util;
 

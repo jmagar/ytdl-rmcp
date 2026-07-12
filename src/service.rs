@@ -21,7 +21,7 @@ use crate::config::Config;
 use crate::downloader::{self, FetchOptions, ItemResult};
 use crate::model::{
     DownloadInput, IdentifyInput, PlexPlaylistAction, PlexPlaylistInput, ProbeInput, SearchInput,
-    SearchPayload, StatsInput,
+    SearchPayload, StatsInput, TransferQueueAction, TransferQueueInput,
 };
 use crate::urls::strip_mix_params;
 
@@ -285,6 +285,34 @@ pub async fn run_download(
     } else {
         None
     };
+
+    if !transferred {
+        if let Some(kept) = staging_kept.as_deref() {
+            let queue_input = crate::transfer_queue::TransferFailureManifestInput {
+                staging_path: kept.to_path_buf(),
+                targets: transfer_dests
+                    .iter()
+                    .map(|(kind, target)| ((*kind).to_string(), target.display()))
+                    .collect(),
+                files: results
+                    .iter()
+                    .flat_map(|item| item.files.iter())
+                    .filter_map(|file| {
+                        file.path
+                            .strip_prefix(&staging_path)
+                            .ok()
+                            .map(PathBuf::from)
+                    })
+                    .collect(),
+                last_error: transfer_error
+                    .clone()
+                    .unwrap_or_else(|| "transfer failed".to_string()),
+            };
+            if let Err(error) = crate::transfer_queue::record_failed_transfer(cfg, queue_input) {
+                tracing::warn!(%error, "failed to record transfer queue manifest");
+            }
+        }
+    }
 
     let mut payload = build_download_payload(
         &results,
@@ -671,6 +699,51 @@ pub fn run_plex_playlist(cfg: &Config, input: PlexPlaylistInput) -> Result<Strin
             ))
         }
     }
+}
+
+pub async fn run_transfer_queue(cfg: &Config, input: TransferQueueInput) -> Result<String> {
+    let value = match input.action {
+        TransferQueueAction::List => serde_json::to_value(crate::transfer_queue::list_queue(cfg)?)?,
+        TransferQueueAction::Prune => {
+            serde_json::to_value(crate::transfer_queue::prune_missing(cfg)?)?
+        }
+        TransferQueueAction::Retry => {
+            let manifest_id = input
+                .manifest_id
+                .as_deref()
+                .filter(|value| !value.trim().is_empty())
+                .ok_or_else(|| anyhow::anyhow!("manifest_id is required for retry"))?;
+            serde_json::to_value(
+                crate::transfer_queue::retry_one(cfg, manifest_id, input.keep_local).await?,
+            )?
+        }
+        TransferQueueAction::RetryAll => {
+            serde_json::to_value(crate::transfer_queue::retry_all(cfg, input.keep_local).await?)?
+        }
+    };
+    Ok(render(
+        &value,
+        input.response_format,
+        render_transfer_queue_markdown,
+    ))
+}
+
+fn render_transfer_queue_markdown(value: &serde_json::Value) -> String {
+    if let Some(entries) = value["entries"].as_array() {
+        if value.get("retried").is_some() {
+            return format!(
+                "Retried {} transfer queue item(s): {} completed, {} failed.",
+                value["retried"].as_u64().unwrap_or(0),
+                value["completed"].as_u64().unwrap_or(0),
+                value["failed"].as_u64().unwrap_or(0)
+            );
+        }
+        return format!("{} pending transfer queue item(s).", entries.len());
+    }
+    if let Some(pruned) = value["pruned"].as_u64() {
+        return format!("Pruned {pruned} transfer queue item(s).");
+    }
+    "Transfer queue action complete.".to_string()
 }
 
 fn render_plex_playlist_markdown(value: &serde_json::Value) -> String {
