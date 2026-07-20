@@ -19,7 +19,7 @@ env:
 
 jobs:
   audit:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, unraid]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
@@ -37,7 +37,7 @@ jobs:
   forbid-aws-lc:
     # Hard cross-compile invariant: the TLS stack must be ring-only. If aws-lc-sys
     # creeps into the tree, the Windows MSVC build breaks — fail fast here.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, unraid]
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
