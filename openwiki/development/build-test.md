@@ -57,6 +57,12 @@ For stdio MCP testing, use a `Diagnostics.Process` harness that keeps stdin open
 - **cross-build** — Smoke-build the Windows target (catches cross-compile breakage early)
 - **windows-smoke** — Native MSVC build + run on real Windows (catches ring/rustls runtime crashes)
 
+[`openwiki-update.yml`](../../.github/workflows/openwiki-update.yml) is a separate scheduled/manual workflow that refreshes this wiki:
+
+- Runs `openwiki code --update --print` on a schedule
+- Uses OpenRouter (`OPENWIKI_PROVIDER=openrouter`, `OPENWIKI_MODEL_ID=z-ai/glm-5.2`)
+- Opens an OpenWiki docs update PR via `peter-evans/create-pull-request`
+
 ## Release process
 
 [`release.yml`](../../.github/workflows/release.yml) runs on `v*` tags:
