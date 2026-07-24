@@ -1,6 +1,6 @@
 [package]
 name = "ytdl-rmcp"
-version = "1.0.2"
+version = "1.0.3"
 edition = "2021"
 categories = ["command-line-utilities", "development-tools"]
 keywords = ["mcp", "yt-dlp", "youtube", "media", "plex"]

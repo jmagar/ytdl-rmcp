@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3](https://github.com/dinglebear-ai/rytdl/compare/v1.0.2...v1.0.3) (2026-07-24)
+
+
+### Dependencies
+
+* **deps:** bump the cargo-dependencies group across 1 directory with 6 updates ([#36](https://github.com/dinglebear-ai/rytdl/issues/36)) ([1f518fd](https://github.com/dinglebear-ai/rytdl/commit/1f518fd1a2fcccbec1dc5b6f6165def9ce68b4d2))
+* **deps:** bump the github-actions group across 1 directory with 5 updates ([#35](https://github.com/dinglebear-ai/rytdl/issues/35)) ([589d71e](https://github.com/dinglebear-ai/rytdl/commit/589d71e1efa866112b59d4f0cefb424f7372ac93))
+
 ## [1.0.2](https://github.com/jmagar/rytdl/compare/v1.0.1...v1.0.2) (2026-07-12)
 
 
