@@ -1,3 +1,9 @@
+---
+type: "Reference"
+title: "Build, Test, and Cross-Compilation"
+openwiki_generated: true
+---
+
 # Build, Test, and Cross-Compilation
 
 ytdl-mcp is a Rust project (edition 2021) with CI gates on fmt, clippy, and tests. Releases cross-compile Linux and Windows MSVC binaries.
