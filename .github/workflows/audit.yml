@@ -29,7 +29,12 @@ jobs:
         uses: ./.github/actions/setup-rust-soldr
 
       - name: Install cargo-audit
-        run: cargo install cargo-audit --locked
+        # Prebuilt binary — building cargo-audit from source pulls aws-lc-sys,
+        # which (a) fails to C-compile against the runner's OpenSSL 3 headers and
+        # (b) violates this repo's own "forbid aws-lc-sys" policy.
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-audit
 
       - name: Audit committed Cargo.lock for vulnerable dependencies
         run: cargo audit
