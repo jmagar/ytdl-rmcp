@@ -1,38 +1,44 @@
+---
+type: "Reference"
+title: "Setup and Configuration"
+openwiki_generated: true
+---
+
 # Setup and Configuration
 
-ytdl-mcp can be installed as a bare binary, Claude Code plugin, Gemini extension, or MCP bundle. All modes read configuration from `YTDLP_*` (and `FFMPEG_*`/`FPCALC_*`) environment variables.
+rytdl can be installed as a bare binary, Claude Code plugin, Gemini extension, or MCP bundle. All modes read configuration from `YTDLP_*` (and `FFMPEG_*`/`FPCALC_*`) environment variables.
 
 ## Installation modes
 
 ### Bare binary
 
-Download a release binary from [GitHub releases](https://github.com/jmagar/ytdl-mcp/releases):
+Download a release binary from [GitHub releases](https://github.com/jmagar/rytdl/releases):
 
 ```bash
 # Linux
-curl -LO https://github.com/jmagar/ytdl-mcp/releases/latest/download/ytdl-mcp-linux-amd64
-chmod +x ytdl-mcp-linux-amd64
-sudo mv ytdl-mcp-linux-amd64 /usr/local/bin/ytdl-mcp
+curl -LO https://github.com/jmagar/ytdl/releases/latest/download/rytdl-linux-amd64
+chmod +x rytdl-linux-amd64
+sudo mv rytdl-linux-amd64 /usr/local/bin/ytdl-rmcp
 
 # Windows
-# Download ytdl-mcp-win64.exe and add to PATH
+# Download rytdl-win64.exe and add to PATH
 ```
 
 Run interactively:
 
 ```bash
-ytdl-mcp setup  # Registers into claude/codex/gemini via mcp add
+rytdl setup  # Registers into claude/codex/gemini via mcp add
 ```
 
 Run as an MCP server:
 
 ```bash
-ytdl-mcp serve  # Serves MCP over stdio
+rytdl serve  # Serves MCP over stdio
 ```
 
 ### Claude Code plugin
 
-Install from the `jmagar/lab` marketplace as `ytdl-mcp`. The plugin references [`scripts/run-server.sh`](../../scripts/run-server.sh), which expects `ytdl-mcp` installed in PATH.
+Install from the `jmagar/lab` marketplace as `rytdl`. The plugin references [`scripts/run-server.sh`](../../scripts/run-server.sh), which expects `rytdl` installed in PATH.
 
 Plugin configuration lives in [`.claude-plugin/plugin.json`](../../.claude-plugin/plugin.json) and [`.mcp.json`](../../.mcp.json) — every `user_config` key maps to an env var.
 
@@ -59,8 +65,8 @@ All modes read from `YTDLP_*` env vars. The canonical list is in [`config.rs`](.
 - `YTDLP_AUDIO_FORMAT` — Audio codec (`mp3`, `m4a`, etc.; default: `mp3`)
 - `YTDLP_SSH_OPTS` — Extra SSH options (e.g. `-p 2222`)
 - `YTDLP_STAGING_DIR` — Local staging dir (default: tempfile)
-- `YTDLP_ARCHIVE_DIR` — Download archive dir (default: `~/.local/state/ytdl-mcp/archive.txt`)
-- `YTDLP_HISTORY_PATH` — JSONL ledger path (default: `~/.local/state/ytdl-mcp/downloads.jsonl`)
+- `YTDLP_ARCHIVE_DIR` — Download archive dir (default: `~/.local/state/rytdl/archive.txt`)
+- `YTDLP_HISTORY_PATH` — JSONL ledger path (default: `~/.local/state/rytdl/downloads.jsonl`)
 - `YTDLP_PLEX_URL` — Plex server URL
 - `YTDLP_PLEX_TOKEN` — Plex access token
 - `YTDLP_PLEX_PLAYLIST` — Plex playlist name (default: `yt-dlp Downloads`)
@@ -81,11 +87,11 @@ All modes read from `YTDLP_*` env vars. The canonical list is in [`config.rs`](.
 
 ## Bootstrap
 
-On first run, ytdl-mcp resolves yt-dlp and ffmpeg:
+On first run, rytdl resolves yt-dlp and ffmpeg:
 
 1. Check env override (`YTDLP_PATH`, `FFMPEG_PATH`)
 2. Search `PATH` with `which`
-3. Download to per-user cache (`~/.cache/ytdl-mcp/`)
+3. Download to per-user cache (`~/.cache/rytdl/`)
 
 SHA256 pinning is optional via `YTDLP_SHA256`/`FFMPEG_SHA256`. For strict reproducibility, combine known-good binaries with path overrides.
 
@@ -102,7 +108,7 @@ Every env var must follow the `YTDLP_`/`FFMPEG_`/`FPCALC_PATH` naming convention
 
 ## Doctor command
 
-Run `ytdl-mcp doctor` for a read-only diagnostic report:
+Run `rytdl doctor` for a read-only diagnostic report:
 
 - Version and git SHA
 - Platform

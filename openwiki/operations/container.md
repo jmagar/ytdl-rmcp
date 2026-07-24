@@ -1,3 +1,9 @@
+---
+type: "Reference"
+title: "Container Runtime"
+openwiki_generated: true
+---
+
 # Container Runtime
 
 The container image packages `ytdl-mcp` with ffmpeg, fpcalc, SSH, rsync, and CA certificates for production media-host batch jobs. The server still runs MCP over stdio by default.
@@ -7,20 +13,20 @@ The container image packages `ytdl-mcp` with ffmpeg, fpcalc, SSH, rsync, and CA 
 Every push to `main` publishes to the GitHub Container Registry:
 
 ```bash
-ghcr.io/jmagar/ytdl-mcp:main
-ghcr.io/jmagar/ytdl-mcp:main-<git-sha>
+ghcr.io/jmagar/rytdl:main
+ghcr.io/jmagar/rytdl:main-<git-sha>
 ```
 
 Pull the latest:
 
 ```bash
-docker pull ghcr.io/jmagar/ytdl-mcp:main
+docker pull ghcr.io/jmagar/rytdl:main
 ```
 
 ## Build locally
 
 ```bash
-docker build -t ytdl-mcp:local .
+docker build -t ytdl-rmcp:local .
 ```
 
 The base image is pinned by digest in [`Dockerfile`](../../Dockerfile) for supply-chain security.
@@ -33,14 +39,14 @@ Mount SSH credentials for remote transfers and keep state/cache directories so y
 docker run --rm -i \
   -e YTDLP_REMOTE=tootie \
   -e YTDLP_REMOTE_PATH=/mnt/user/data/media/music/yt-dlp \
-  -e YTDLP_HISTORY_PATH=/home/ytdl/.local/state/ytdl-mcp/downloads.jsonl \
+  -e YTDLP_HISTORY_PATH=/home/ytdl/.local/state/ytdl/downloads.jsonl \
   -v "$HOME/.ssh:/home/ytdl/.ssh:ro" \
-  -v ytdl-mcp-state:/home/ytdl/.local/state/ytdl-mcp \
-  -v ytdl-mcp-cache:/home/ytdl/.cache \
-  ghcr.io/jmagar/ytdl-mcp:main serve
+  -v ytdl-state:/home/ytdl/.local/state/ytdl \
+  -v ytdl-cache:/home/ytdl/.cache \
+  ghcr.io/jmagar/rytdl:main serve
 ```
 
-For MCP clients that expect a command, use `docker run --rm -i ... ghcr.io/jmagar/ytdl-mcp:main serve`.
+For MCP clients that expect a command, use `docker run --rm -i ... ghcr.io/jmagar/rytdl:main serve`.
 
 ## Volume mounts
 
@@ -57,7 +63,7 @@ docker run --rm -i \
   -e YTDLP_ACOUSTID_CLIENT_KEY="$YTDLP_ACOUSTID_CLIENT_KEY" \
   -e YTDLP_MUSICBRAINZ_CONTACT="you@example.com" \
   -v /mnt/user/data/media/music/yt-dlp:/library \
-  ghcr.io/jmagar/ytdl-mcp:main serve
+  ghcr.io/jmagar/rytdl:main serve
 ```
 
 Then call:

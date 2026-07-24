@@ -1,3 +1,9 @@
+---
+type: "Reference"
+title: "Download Workflow"
+openwiki_generated: true
+---
+
 # Download Workflow
 
 The `youtube_download` tool orchestrates the full media pipeline: resolve tools, download via yt-dlp, embed metadata, organize files, transfer to local/SSH/rclone targets, append history, and sync Plex playlists.

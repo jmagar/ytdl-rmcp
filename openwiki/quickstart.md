@@ -1,17 +1,26 @@
+---
+type: Reference
+title: "ytdl-mcp Quickstart"
+description: "Entry point for getting started with ytdl-mcp and navigating to architecture, operations, and workflows."
+---
+
 # ytdl-mcp Quickstart
 
 **ytdl-mcp** is a cross-platform, single-binary MCP (Model Context Protocol) server that downloads media from YouTube and other yt-dlp-supported sites, embeds metadata and cover art, organizes files by artist, and transfers results to an SSH remote.
 
 ## What this project does
 
-ytdl-mcp provides six MCP tools that integrate media downloading capabilities into AI coding assistants:
+ytdl-mcp provides eight MCP tools that integrate media workflows into AI coding assistants:
 
-- **`youtube_download`** — Download audio, video, or both from URLs, tag them with metadata, and rsync/scp to a remote directory
+- **`youtube_download`** — Download audio, video, or both from URLs, tag them with metadata, and transfer results to a local, SSH, or rclone target
 - **`youtube_search`** — Search YouTube with yt-dlp and return result URLs without downloading
 - **`youtube_search_ui`** — Open an interactive YouTube search UI (MCP App) for selecting videos
 - **`youtube_probe`** — Resolve title, duration, uploader, and format counts without downloading media
 - **`youtube_identify`** — Fingerprint local audio files with AcoustID/MusicBrainz and preview or write canonical tags
 - **`youtube_stats`** — Summarize the JSONL download history ledger (totals, file kinds, uploaders, recent entries)
+- **`youtube_plex_playlist`** — Build or preview Plex playlists from successful audio download history
+- **`youtube_transfer_queue`** — List and drain retained-staging transfer failure manifests
+
 
 The server runs over stdio as an MCP server, auto-downloads yt-dlp and ffmpeg into a per-user cache, and supports both bare binary and containerized deployment.
 
@@ -25,7 +34,7 @@ The server runs over stdio as an MCP server, auto-downloads yt-dlp and ffmpeg in
 
 ## Key concepts
 
-- **Tools** — Six MCP tools backed by a single Rust binary on stdio transport
+- **Tools** — Eight MCP tools (including Plex and transfer queue operations) backed by a single Rust binary on stdio transport
 - **Bootstrap** — Runtime auto-download of yt-dlp and ffmpeg with optional SHA256 pinning
 - **Transfer** — rsync with scp fallback, non-interactive SSH, separate audio/video destinations
 - **Metadata** — Embedded tags (title/artist/album/date) with cover art, `Artist/Title [id]` file organization
