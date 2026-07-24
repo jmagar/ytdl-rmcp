@@ -77,7 +77,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y nasm llvm clang lld
-          cargo install cargo-xwin --locked
+      - name: Install cargo-xwin
+        # Prebuilt binary — avoids compiling cargo-xwin's edition-2024 deps
+        # (getrandom, ring) from source through the soldr cargo/rustc wrapper,
+        # which fails on the self-hosted runner.
+        uses: taiki-e/install-action@7572810d7dd469b651bb7793945692cf78da5dd7 # v2.85.0
+        with:
+          tool: cargo-xwin
       - name: Cross-build (windows-msvc)
         run: cargo xwin build --release --locked --target x86_64-pc-windows-msvc
 
